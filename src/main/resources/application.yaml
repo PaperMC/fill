@@ -1,0 +1,30 @@
+management:
+  endpoint:
+    health:
+      access: read_only
+  endpoints:
+    access:
+      default: read_only
+
+server:
+  error:
+    whitelabel:
+      enabled: false
+
+spring:
+  data:
+    mongodb:
+      auto-index-creation: true
+      database: fill
+  servlet:
+    multipart:
+      max-file-size: 55MB
+      max-request-size: 70MB
+  web:
+    resources:
+      add-mappings: false
+
+springdoc:
+  api-docs:
+    path: /openapi.yaml
+  writer-with-order-by-keys: true

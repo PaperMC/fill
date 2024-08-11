@@ -1,0 +1,208 @@
+scalar DateTime
+
+type Query {
+  projects: [Project]
+
+  """
+  Look up a project by its id
+  """
+  project(
+    id: String!
+  ): Project
+}
+
+type Mutation {
+  createFamily(
+    input: CreateFamilyInput!
+  ): CreateFamilyPayload
+
+  createVersion(
+    input: CreateVersionInput!
+  ): CreateVersionPayload
+
+  promoteBuild(
+    input: PromoteBuildInput!
+  ): PromoteBuildPayload
+}
+
+type Project {
+  id: String!
+
+  versions(
+    """
+    Filtering options for versions returned from the connection.
+    """
+    filterBy: VersionFilters
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+  ): [Version]
+
+  version(
+    """
+    Version id.
+    """
+    id: String!
+  ): Version
+}
+
+type Family {
+  id: String!
+}
+
+type Version {
+  id: String!
+
+  java: Java!
+
+  builds(
+    """
+    Filtering options for builds returned from the connection.
+    """
+    filterBy: BuildFilters
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+  ): [Build]
+}
+
+input VersionFilters {
+  supportStatus: SupportStatus
+}
+
+enum SupportStatus {
+  SUPPORTED
+
+  DEPRECATED
+
+  UNSUPPORTED
+}
+
+type Java {
+  version: JavaVersion!
+
+  flags: JavaFlags!
+}
+
+input JavaInput {
+  version: JavaVersionInput!
+
+  flags: JavaFlagsInput!
+}
+
+type JavaVersion {
+  minimum: Int!
+}
+
+input JavaVersionInput {
+  minimum: Int!
+}
+
+type JavaFlags {
+  recommended: [String!]!
+}
+
+input JavaFlagsInput {
+  recommended: [String!]!
+}
+
+type Build {
+  id: Int!
+
+  time: DateTime!
+
+  channel: BuildChannel!
+
+  commits: [Commit!]!
+
+  downloads: [Download!]!
+
+  download(
+    """
+    Download name.
+    """
+    name: String!
+  ): Download
+}
+
+input BuildFilters {
+  channel: BuildChannel
+}
+
+enum BuildChannel {
+  ALPHA
+
+  BETA
+
+  STABLE
+
+  RECOMMENDED
+}
+
+type Checksums {
+  sha256: String!
+}
+
+type Commit {
+  sha: String!
+
+  message: String!
+}
+
+type Download {
+  name: String!
+
+  checksums: Checksums!
+
+  size: Int!
+
+  url: String!
+}
+
+input CreateFamilyInput {
+  project: String!
+
+  id: String!
+
+  java: JavaInput!
+}
+
+type CreateFamilyPayload {
+  """
+  The new family.
+  """
+  family: Family
+}
+
+input CreateVersionInput {
+  project: String!
+
+  family: String!
+
+  id: String!
+
+  java: JavaInput
+}
+
+type CreateVersionPayload {
+  """
+  The new version.
+  """
+  version: Version
+}
+
+input PromoteBuildInput {
+  project: String!
+
+  version: String!
+
+  id: Int!
+}
+
+type PromoteBuildPayload {
+  version: Version!
+}

@@ -1,0 +1,16 @@
+# https://help.github.com/articles/ignoring-files/
+
+# Gradle
+/.gradle/
+/build/
+
+# JetBrains IntelliJ IDEA
+/.idea/
+/*.iml
+
+# macOS
+.DS_Store
+
+# Application
+/run/
+/graphql.config.yaml
