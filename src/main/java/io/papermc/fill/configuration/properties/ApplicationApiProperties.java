@@ -67,7 +67,8 @@ public record ApplicationApiProperties(
       String accessKeyId,
       String secretAccessKey,
       String bucket,
-      boolean usePathStyleAccess
+      boolean usePathStyleAccess,
+      boolean useS3v4Signer
     ) implements S3Configuration {
     }
   }

@@ -20,6 +20,8 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.auth.signer.AwsS3V4Signer;
+import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
@@ -38,6 +40,8 @@ public interface S3Configuration {
 
   boolean usePathStyleAccess();
 
+  boolean useS3v4Signer();
+
   static S3Client createClient(final S3Configuration properties) {
     final S3ClientBuilder client = S3Client.builder();
     client.credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(properties.accessKeyId(), properties.secretAccessKey())));
@@ -49,6 +53,11 @@ public interface S3Configuration {
     client.serviceConfiguration(configuration -> {
       if (properties.usePathStyleAccess()) {
         configuration.pathStyleAccessEnabled(true);
+      }
+    });
+    client.overrideConfiguration(configuration -> {
+      if (properties.useS3v4Signer()) {
+        configuration.putAdvancedOption(SdkAdvancedClientOption.SIGNER, AwsS3V4Signer.create());
       }
     });
     return client.build();
