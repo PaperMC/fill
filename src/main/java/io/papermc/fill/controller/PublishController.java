@@ -103,7 +103,12 @@ public class PublishController {
   ) {
     final Payload payload = this.payloads.get(request.id());
     try {
-      payload.downloads.put(file.getName(), file.getBytes());
+      final String fileName = file.getOriginalFilename();
+      if (fileName == null || fileName.isBlank()) {
+        LOGGER.error("Failed to publish: payload has no file name");
+        throw new PublishFailedException(new IllegalArgumentException("Missing file name"));
+      }
+      payload.downloads.put(fileName, file.getBytes());
     } catch (final IOException e) {
       throw new PublishFailedException(e);
     }
