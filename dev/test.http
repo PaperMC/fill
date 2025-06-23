@@ -1,0 +1,61 @@
+### upload a payload
+POST localhost:8080/upload
+Content-Type: multipart/form-data; boundary=Boundary
+Authorization: Basic admin admin
+
+--Boundary
+Content-Disposition: form-data; name="request"
+Content-Type: application/json
+
+{
+    "id": "6e9e34e8-b8ec-4c11-9b23-16dd951bb480"
+}
+--Boundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+
+< test.txt
+
+### publish a build
+POST localhost:8080/publish
+Content-Type: application/json
+Authorization: Basic admin admin
+
+{
+    "id": "6e9e34e8-b8ec-4c11-9b23-16dd951bb480",
+    "project": "test-project",
+    "family": "1.0",
+    "version": "1.0.0",
+    "build": "2",
+    "time": "{{ $isoTimestamp }}",
+    "channel": "STABLE",
+    "commits": [{
+        "sha": "",
+        "time": "{{ $isoTimestamp }}",
+        "message": "Initial commit"
+    }],
+    "downloads": {
+        "server:default": {
+            "name": "test.txt",
+            "checksums": {
+              "sha256": "66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18"
+            },
+            "size": 1
+        }
+    }
+}
+
+
+### get projects
+GET localhost:8080/v3/projects
+
+### get versions
+GET localhost:8080/v3/projects/test-project/versions
+
+### get builds
+GET localhost:8080/v3/projects/test-project/versions/1.0.0/builds
+
+### get build
+GET localhost:8080/v3/projects/test-project/versions/1.0.0/builds/1
+
+### get latest build
+GET localhost:8080/v3/projects/test-project/versions/1.0.0/builds/latest

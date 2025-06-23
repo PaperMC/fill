@@ -1,0 +1,22 @@
+name: "fill"
+services:
+  minio:
+    image: "bitnamilegacy/minio:latest"
+    ports:
+      - "9100:9000"
+      - "9101:9001"
+    environment:
+      - MINIO_ROOT_USER=fill_root
+      - MINIO_ROOT_PASSWORD=fill_pass
+      - MINIO_DEFAULT_BUCKETS=fill
+    volumes:
+      - minio_data:/data
+  mongo:
+    image: "mongo:latest"
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+volumes:
+  minio_data:
+  mongo_data:

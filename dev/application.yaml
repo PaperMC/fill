@@ -1,0 +1,42 @@
+app:
+  api:
+    legacy-download-key-mappings:
+      folia:
+        - from: "server:default"
+          to: application
+      paper:
+        - from: "server:default"
+          to: application
+        - from: "server:mojang"
+          to: mojang-mappings
+      travertine:
+        - from: "server:default"
+          to: application
+      velocity:
+        - from: "server:default"
+          to: application
+      waterfall:
+        - from: "server:default"
+          to: application
+    metadata:
+      title: PaperMC Fill Local
+      version: 3.0.0
+    storage:
+      s3:
+        endpoint: http://localhost:9100
+        region: auto
+        access-key-id: fill_root
+        secret-access-key: fill_pass
+        bucket: fill
+        use-path-style-access: true
+      url: http://localhost:9100/fill/
+      path: v1/objects/${download_sha256}/${download_filename}
+  security:
+    jwt:
+      secret: "6LfcQFZ+nH3pQvD1zjD1x6y9K6E2QvP3r5bN5r6FqK2mZc7B8eNwLxQw9Y2uV1tS"
+    users:
+      - username: admin
+        password: admin
+        roles:
+          - API_PUBLISH
+          - API_MANAGE
