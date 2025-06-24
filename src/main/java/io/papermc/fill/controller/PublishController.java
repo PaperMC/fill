@@ -149,7 +149,7 @@ public class PublishController {
       version,
       request.build(),
       request.channel(),
-      request.commits(),
+      request.commits().reversed(),
       request.downloads()
     );
 
