@@ -33,7 +33,9 @@ public class LegacyBuildChannelSerializer extends StdSerializer<BuildChannel> {
   public void serialize(final BuildChannel value, final JsonGenerator gen, final SerializerProvider provider) throws IOException {
     gen.writeString(switch (value) {
       case ALPHA -> "experimental";
+      case BETA -> "experimental";
       case STABLE -> "default";
+      case RECOMMENDED -> "default";
       default -> throw new IllegalStateException("Unexpected value: " + value);
     });
   }
