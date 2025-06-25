@@ -47,6 +47,7 @@ import io.papermc.fill.util.http.Responses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -152,6 +153,7 @@ public class Meta2Controller {
     final List<VersionEntity> versions = this.versions.findAllByProjectAndFamily(pe, fe).toList();
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersionIn(pe, versions)
       .filter(build -> isAllowed(build))
+      .sorted(Comparator.comparing(BuildEntity::number))
       .toList();
     final FamilyBuildsResponse response = new FamilyBuildsResponse(
       pe.name(),
@@ -183,6 +185,7 @@ public class Meta2Controller {
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(pe, ve)
       .filter(build -> isAllowed(build))
+      .sorted(Comparator.comparing(BuildEntity::number))
       .toList();
     final VersionResponse response = new VersionResponse(
       pe.name(),
@@ -205,6 +208,7 @@ public class Meta2Controller {
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(pe, ve)
       .filter(build -> isAllowed(build))
+      .sorted(Comparator.comparing(BuildEntity::number))
       .toList();
     final BuildsResponse response = new BuildsResponse(
       pe.name(),

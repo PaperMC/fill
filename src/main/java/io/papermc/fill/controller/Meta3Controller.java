@@ -278,6 +278,7 @@ public class Meta3Controller {
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final List<BuildEntity> bes = this.builds.findAllByProjectAndVersion(pe, ve)
       .filter(be -> (filterByChannel == null) || be.channel() == filterByChannel)
+      .sorted(Comparator.comparing(BuildEntity::number))
       .toList()
       .reversed();
     final List<BuildResponse> response = bes.stream()
@@ -402,7 +403,9 @@ public class Meta3Controller {
   }
 
   private VersionResponse createVersionResponse(final VersionEntity version) {
-    final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(version.project(), version).toList();
+    final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(version.project(), version)
+      .sorted(Comparator.comparing(BuildEntity::number))
+      .toList();
     return new VersionResponse(
       new VersionResponse.Version(
         version.name(),
