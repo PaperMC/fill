@@ -38,6 +38,7 @@ import io.papermc.fill.graphql.payload.PromoteBuildPayload;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Support;
 import io.papermc.fill.model.SupportStatus;
+import java.time.Instant;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,6 +80,7 @@ public class GraphMutationController {
     }
     final FamilyEntity entity = this.families.save(FamilyEntity.create(
       new ObjectId(),
+      Instant.now(),
       project,
       input.id(),
       input.java()
@@ -99,6 +101,7 @@ public class GraphMutationController {
     }
     final VersionEntity entity = this.versions.save(VersionEntity.create(
       new ObjectId(),
+      Instant.now(),
       project,
       family,
       input.id(),

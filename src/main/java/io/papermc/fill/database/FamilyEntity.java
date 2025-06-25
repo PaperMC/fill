@@ -17,6 +17,7 @@ package io.papermc.fill.database;
 
 import io.papermc.fill.model.Family;
 import io.papermc.fill.model.Java;
+import java.time.Instant;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -38,12 +39,14 @@ public class FamilyEntity extends AbstractEntity implements Family {
 
   public static FamilyEntity create(
     final ObjectId _id,
+    final Instant createdAt,
     final ProjectEntity project,
     final String name,
     final Java java
   ) {
     final FamilyEntity entity = new FamilyEntity();
     entity._id = _id;
+    entity.createdAt = createdAt;
     entity.project = project;
     entity.name = name;
     entity.java = java;

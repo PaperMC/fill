@@ -27,6 +27,8 @@ import io.papermc.fill.exception.NoSuchVersionException;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.DownloadWithUrl;
+import io.papermc.fill.model.FamilyComparator;
+import io.papermc.fill.model.VersionComparator;
 import io.papermc.fill.model.response.ErrorResponse;
 import io.papermc.fill.model.response.v3.BuildResponse;
 import io.papermc.fill.model.response.v3.ProjectResponse;
@@ -52,6 +54,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -195,6 +198,7 @@ public class Meta3Controller {
       .reversed();
     final VersionsResponse response = new VersionsResponse(
       versions.stream()
+        .sorted(VersionComparator.CREATED_AT.reversed())
         .map(this::createVersionResponse)
         .toList()
     );
@@ -371,12 +375,23 @@ public class Meta3Controller {
       .reversed()
       .stream()
       .collect(Collectors.groupingBy(
-        version -> version.family().name(),
-        LinkedHashMap::new,
-        Collectors.mapping(
-          VersionEntity::name,
-          Collectors.toList()
+        VersionEntity::family,
+        () -> new TreeMap<>(FamilyComparator.CREATED_AT.reversed()),
+        Collectors.collectingAndThen(
+          Collectors.toList(),
+          list -> {
+            list.sort(VersionComparator.CREATED_AT.reversed());
+            return list;
+          }
         )
+      ))
+      .entrySet()
+      .stream()
+      .collect(Collectors.toMap(
+        e -> e.getKey().name(),
+        e -> e.getValue().stream().map(VersionEntity::name).toList(),
+        (a, b) -> b,
+        LinkedHashMap::new
       ));
     return new ProjectResponse(
       new ProjectResponse.Project(

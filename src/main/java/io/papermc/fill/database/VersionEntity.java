@@ -18,6 +18,7 @@ package io.papermc.fill.database;
 import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Support;
 import io.papermc.fill.model.Version;
+import java.time.Instant;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -46,6 +47,7 @@ public class VersionEntity extends AbstractEntity implements Version {
 
   public static VersionEntity create(
     final ObjectId _id,
+    final Instant createdAt,
     final ProjectEntity project,
     final FamilyEntity family,
     final String name,
@@ -55,6 +57,7 @@ public class VersionEntity extends AbstractEntity implements Version {
   ) {
     final VersionEntity entity = new VersionEntity();
     entity._id = _id;
+    entity.createdAt = createdAt;
     entity.project = project;
     entity.family = family;
     entity.name = name;
