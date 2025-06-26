@@ -19,6 +19,9 @@ spring:
   graphql:
     graphiql:
       enabled: true
+    schema:
+      printer:
+        enabled: true
   servlet:
     multipart:
       max-file-size: 55MB
