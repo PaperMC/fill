@@ -19,6 +19,7 @@ import io.papermc.fill.configuration.properties.ApplicationApiProperties;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.servers.Server;
+import io.swagger.v3.oas.models.tags.Tag;
 import java.util.List;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +33,7 @@ public class OpenApiConfiguration {
     final OpenAPI api = new OpenAPI();
     api.setInfo(
       new Info()
+        .description(properties.metadata().description())
         .title(properties.metadata().title())
         .version(properties.metadata().version())
     );
@@ -42,6 +44,12 @@ public class OpenApiConfiguration {
           .url(url)
       ));
     }
+    api.setTags(List.of(
+      new Tag()
+        .name("Meta v3"),
+      new Tag()
+        .name("Meta v2")
+    ));
     return api;
   }
 }

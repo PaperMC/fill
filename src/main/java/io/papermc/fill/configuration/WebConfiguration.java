@@ -20,11 +20,17 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.filter.ShallowEtagHeaderFilter;
 import org.springframework.web.filter.UrlHandlerFilter;
 
 @Configuration
 @NullMarked
 public class WebConfiguration {
+  @Bean
+  public ShallowEtagHeaderFilter shallowEtagHeaderFilter() {
+    return new ShallowEtagHeaderFilter();
+  }
+
   // https://github.com/spring-projects/spring-framework/issues/28552
   @Bean
   public FilterRegistrationBean<OncePerRequestFilter> trailingSlashUrlHandlerFilterRegistrationBean() {

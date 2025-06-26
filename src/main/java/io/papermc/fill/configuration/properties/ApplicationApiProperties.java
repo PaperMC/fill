@@ -40,6 +40,7 @@ public record ApplicationApiProperties(
 
   @NullMarked
   public record Metadata(
+    @Nullable String description,
     String title,
     @Nullable String url,
     String version

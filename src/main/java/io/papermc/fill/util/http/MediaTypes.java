@@ -16,10 +16,12 @@
 package io.papermc.fill.util.http;
 
 import org.jspecify.annotations.NullMarked;
+import org.springframework.http.MediaType;
 
 @NullMarked
 public final class MediaTypes {
   public static final String APPLICATION_JAVA_ARCHIVE_VALUE = "application/java-archive";
+  public static final MediaType APPLICATION_JAVA_ARCHIVE = MediaType.parseMediaType(APPLICATION_JAVA_ARCHIVE_VALUE);
 
   private MediaTypes() {
   }
