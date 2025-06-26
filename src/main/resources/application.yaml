@@ -16,6 +16,9 @@ spring:
     mongodb:
       auto-index-creation: true
       database: fill
+  graphql:
+    graphiql:
+      enabled: true
   servlet:
     multipart:
       max-file-size: 55MB
