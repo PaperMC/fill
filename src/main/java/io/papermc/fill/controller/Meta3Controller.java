@@ -396,7 +396,8 @@ public class Meta3Controller {
       ));
     return new ProjectResponse(
       new ProjectResponse.Project(
-        project.name()
+        project.name(),
+        project.displayName()
       ),
       versions
     );

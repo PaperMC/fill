@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.database;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -30,6 +31,7 @@ public class ProjectEntity extends AbstractEntity {
   public ProjectEntity() {
   }
 
+  @VisibleForTesting
   public static ProjectEntity create(
     final ObjectId _id,
     final String name,

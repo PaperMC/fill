@@ -26,7 +26,8 @@ public record ProjectResponse(
 ) {
   @NullMarked
   public record Project(
-    String id
+    String id,
+    String name
   ) {
   }
 }
