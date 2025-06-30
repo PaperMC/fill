@@ -46,6 +46,7 @@ import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -145,16 +146,23 @@ public class DiscordNotifier implements BuildPublishListener {
       row.add(Button.link(download.withUrl(this.bucket.getDownloadUrl(build, download)).url().toString(), CustomEmoji.of(this.properties.emojis().download().id(), this.properties.emojis().download().name(), false), "Download"));
 
       if (includeGitCompare) {
-        final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version).toList();
-        final BuildEntity buildBefore = builds.getLast();
-        row.add(Button.link(String.format(
-          "https://github.com/%s/%s/compare/%s..%s",
-          repository.owner(),
-          repository.name(),
-          buildBefore.commits().getFirst().sha(),
-          build.commits().getFirst().sha()
-        ), CustomEmoji.of(this.properties.emojis().gitCompare().id(), this.properties.emojis().gitCompare().name(), false), "GitHub Diff"));
+        final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version)
+          .toList();
+        final BuildEntity buildBefore = getBuildBefore(builds);
+        if (buildBefore != null) {
+          row.add(Button.link(String.format(
+            "https://github.com/%s/%s/compare/%s..%s",
+            repository.owner(),
+            repository.name(),
+            buildBefore.commits().getFirst().sha(),
+            build.commits().getFirst().sha()
+          ), CustomEmoji.of(this.properties.emojis().gitCompare().id(), this.properties.emojis().gitCompare().name(), false), "GitHub Diff"));
+        }
       }
     });
+  }
+
+  private static @Nullable BuildEntity getBuildBefore(final List<BuildEntity> builds) {
+    return builds.size() >= 2 ? builds.get(builds.size() - 2) : null;
   }
 }
