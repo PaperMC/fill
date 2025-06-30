@@ -105,6 +105,7 @@ dependencies {
 
   developmentOnly("org.springframework.boot:spring-boot-devtools")
 
+  implementation("com.auth0:java-jwt:4.4.0")
   implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.14.0")
   implementation("com.bucket4j:bucket4j_jdk17-core:8.14.0")
   implementation("com.discord4j:discord4j-core:3.3.0-RC2")

@@ -24,6 +24,10 @@ public record Commit(
   Instant time,
   String message
 ) {
+  public static String getShortSha(final Commit commit)  {
+    return commit.sha().substring(0, 7);
+  }
+
   public String summary() {
     return this.message.split("\\R")[0];
   }

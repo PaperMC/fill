@@ -1,0 +1,160 @@
+/*
+ * Copyright 2024 PaperMC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.papermc.fill.discord;
+
+import discord4j.common.util.TimestampFormat;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
+import discord4j.core.object.component.Container;
+import discord4j.core.object.component.Section;
+import discord4j.core.object.component.Separator;
+import discord4j.core.object.component.TextDisplay;
+import discord4j.core.object.component.Thumbnail;
+import discord4j.core.object.component.UnfurledMediaItem;
+import discord4j.core.object.emoji.CustomEmoji;
+import discord4j.core.object.entity.Message;
+import discord4j.core.spec.MessageCreateSpec;
+import discord4j.rest.util.AllowedMentions;
+import io.papermc.fill.configuration.properties.ApplicationDiscordProperties;
+import io.papermc.fill.database.BuildEntity;
+import io.papermc.fill.database.BuildRepository;
+import io.papermc.fill.database.ProjectEntity;
+import io.papermc.fill.database.VersionEntity;
+import io.papermc.fill.model.BuildPublishListener;
+import io.papermc.fill.model.Commit;
+import io.papermc.fill.model.Download;
+import io.papermc.fill.model.GitRepository;
+import io.papermc.fill.model.NotificationChannel;
+import io.papermc.fill.service.BucketService;
+import io.papermc.fill.service.DiscordService;
+import io.papermc.fill.util.discord.Components;
+import java.util.List;
+import java.util.Objects;
+import java.util.OptionalInt;
+import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+@NullMarked
+public class DiscordNotifier implements BuildPublishListener {
+  private final ApplicationDiscordProperties properties;
+  private final BuildRepository builds;
+  private final BucketService bucket;
+  private final DiscordService discord;
+
+  @Autowired
+  public DiscordNotifier(
+    final ApplicationDiscordProperties properties,
+    final BuildRepository builds,
+    final BucketService bucket,
+    final DiscordService discord
+  ) {
+    this.properties = properties;
+    this.builds = builds;
+    this.bucket = bucket;
+    this.discord = discord;
+  }
+
+  @Override
+  public void onBuildPublished(final ProjectEntity project, final VersionEntity version, final BuildEntity build) {
+    final GitRepository repository = Objects.requireNonNullElse(version.gitRepository(), project.gitRepository());
+
+    final Container content = this.createContent(project, version, repository, build);
+
+    for (final NotificationChannel channel : project.discordNotificationChannels()) {
+      final MessageCreateSpec.Builder message = MessageCreateSpec.builder();
+      message.addFlag(Message.Flag.IS_COMPONENTS_V2);
+      message.allowedMentions(AllowedMentions.suppressEveryone());
+      message.addComponent(content);
+      message.addComponent(this.createButtons(project, version, repository, build, channel.includeGitCompare()));
+      final MessageCreateSpec request = message.build();
+      this.discord.createMessage(channel.snowflake(), request).subscribe();
+    }
+  }
+
+  private Container createContent(final ProjectEntity project, final VersionEntity version, final GitRepository repository, final BuildEntity build) {
+    return Components.container(OptionalInt.empty(), container -> {
+      container.add(
+        Section.of(
+          Thumbnail.of(UnfurledMediaItem.of(project.logoUrl().toString())),
+          List.of(
+            TextDisplay.of(String.format(
+              "# Build %d for %s %s",
+              build.number(),
+              project.displayName(),
+              version.name()
+            )),
+            TextDisplay.of(String.format(
+              "**Channel**: %s",
+              switch (build.channel()) {
+                case ALPHA -> "Alpha";
+                case BETA -> "Beta";
+                case STABLE -> "Stable";
+                case RECOMMENDED -> "Recommended";
+              }
+            )),
+            TextDisplay.of(String.format(
+              "**Published**: %s (%s)",
+              TimestampFormat.SHORT_DATE_TIME.format(build.createdAt()),
+              TimestampFormat.RELATIVE_TIME.format(build.createdAt())
+            ))
+          )
+        )
+      );
+      container.add(Separator.of());
+      container.add(TextDisplay.of(
+        build.commits().stream()
+          .map(commit -> String.format(
+            "- %s: %s",
+            String.format(
+              "[%s](https://github.com/%s/%s/commit/%s)",
+              Commit.getShortSha(commit),
+              repository.owner(),
+              repository.name(),
+              commit.sha()
+            ),
+            commit.summary()
+          )).collect(Collectors.joining("\n"))
+      ));
+    }, switch (build.channel()) {
+      case ALPHA -> Components.COLOR_RED;
+      case BETA -> Components.COLOR_YELLOW;
+      case STABLE -> Components.COLOR_BLUE;
+      case RECOMMENDED -> Components.COLOR_GREEN;
+    }, false);
+  }
+
+  private ActionRow createButtons(final ProjectEntity project, final VersionEntity version, final GitRepository repository, final BuildEntity build, final boolean includeGitCompare) {
+    return Components.row(OptionalInt.empty(), row -> {
+      final Download download = build.downloads().get(project.discordNotificationDownloadKey());
+      row.add(Button.link(download.withUrl(this.bucket.getDownloadUrl(build, download)).url().toString(), CustomEmoji.of(this.properties.emojis().download().id(), this.properties.emojis().download().name(), false), "Download"));
+
+      if (includeGitCompare) {
+        final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version).toList();
+        final BuildEntity buildBefore = builds.getLast();
+        row.add(Button.link(String.format(
+          "https://github.com/%s/%s/compare/%s..%s",
+          repository.owner(),
+          repository.name(),
+          buildBefore.commits().getFirst().sha(),
+          build.commits().getFirst().sha()
+        ), CustomEmoji.of(this.properties.emojis().gitCompare().id(), this.properties.emojis().gitCompare().name(), false), "GitHub Diff"));
+      }
+    });
+  }
+}

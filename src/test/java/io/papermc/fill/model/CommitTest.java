@@ -17,6 +17,7 @@ package io.papermc.fill.model;
 
 import java.time.Instant;
 import org.jspecify.annotations.NullMarked;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -24,6 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @NullMarked
 class CommitTest {
+  @Test
+  void testGetShortSha() {
+    final Commit commit = new Commit("afa6c8b3a2fae95785dc7d9685a57835d703ac88", Instant.now(), "This is a test.");
+    assertEquals("afa6c8b", Commit.getShortSha(commit));
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {
     "This is a test.\n\nA what?\r\nA test.\r\nA what?\r\nA test.\r\nOh, a test.",

@@ -13,13 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.model;
+package io.papermc.fill.configuration.properties;
 
 import org.jspecify.annotations.NullMarked;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
+@ConfigurationProperties("app.discord")
 @NullMarked
-public record GitRepository(
-  String owner,
-  String name
+public record ApplicationDiscordProperties(
+  String token,
+  Emojis emojis
 ) {
+  @NullMarked
+  public record Emojis(
+    Emoji download,
+    Emoji gitCompare
+  ) {
+    @NullMarked
+    public record Emoji(
+      String name,
+      long id
+    ) {
+    }
+  }
 }

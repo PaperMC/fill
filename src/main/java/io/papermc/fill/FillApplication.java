@@ -16,6 +16,7 @@
 package io.papermc.fill;
 
 import io.papermc.fill.configuration.properties.ApplicationApiProperties;
+import io.papermc.fill.configuration.properties.ApplicationDiscordProperties;
 import io.papermc.fill.configuration.properties.ApplicationSecurityProperties;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.SpringApplication;
@@ -25,6 +26,7 @@ import org.springframework.data.mongodb.config.EnableMongoAuditing;
 
 @EnableConfigurationProperties({
   ApplicationApiProperties.class,
+  ApplicationDiscordProperties.class,
   ApplicationSecurityProperties.class
 })
 @EnableMongoAuditing

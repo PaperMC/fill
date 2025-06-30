@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.database;
 
+import io.papermc.fill.model.GitRepository;
 import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Support;
 import io.papermc.fill.model.Version;
@@ -37,6 +38,7 @@ public class VersionEntity extends AbstractEntity implements Version {
   @DocumentReference
   private FamilyEntity family;
   private String name;
+  private @Nullable GitRepository gitRepository;
   private Support support;
   private @Nullable Java java;
   @DocumentReference
@@ -51,9 +53,9 @@ public class VersionEntity extends AbstractEntity implements Version {
     final ProjectEntity project,
     final FamilyEntity family,
     final String name,
+    final @Nullable GitRepository gitRepository,
     final Support support,
-    final @Nullable Java java,
-    final @Nullable BuildEntity promotedBuild
+    final @Nullable Java java
   ) {
     final VersionEntity entity = new VersionEntity();
     entity._id = _id;
@@ -61,9 +63,9 @@ public class VersionEntity extends AbstractEntity implements Version {
     entity.project = project;
     entity.family = family;
     entity.name = name;
+    entity.gitRepository = gitRepository;
     entity.support = support;
     entity.java = java;
-    entity.promotedBuild = promotedBuild;
     return entity;
   }
 
@@ -78,6 +80,10 @@ public class VersionEntity extends AbstractEntity implements Version {
   @Override
   public String name() {
     return this.name;
+  }
+
+  public @Nullable GitRepository gitRepository() {
+    return this.gitRepository;
   }
 
   @Override

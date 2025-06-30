@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.model;
+package io.papermc.fill.service;
 
+import discord4j.core.spec.MessageCreateSpec;
+import discord4j.discordjson.json.MessageData;
 import org.jspecify.annotations.NullMarked;
+import reactor.core.publisher.Mono;
 
 @NullMarked
-public record GitRepository(
-  String owner,
-  String name
-) {
+public interface DiscordService {
+  Mono<MessageData> createMessage(final long channel, final MessageCreateSpec request);
 }

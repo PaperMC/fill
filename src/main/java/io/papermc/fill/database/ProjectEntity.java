@@ -16,6 +16,10 @@
 package io.papermc.fill.database;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.papermc.fill.model.GitRepository;
+import io.papermc.fill.model.NotificationChannel;
+import java.net.URI;
+import java.util.List;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -27,6 +31,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class ProjectEntity extends AbstractEntity {
   private String name;
   private String displayName;
+  private GitRepository gitRepository;
+  private URI logoUrl;
+  private List<NotificationChannel> discordNotificationChannels;
+  private String discordNotificationDownloadKey;
 
   public ProjectEntity() {
   }
@@ -35,12 +43,20 @@ public class ProjectEntity extends AbstractEntity {
   public static ProjectEntity create(
     final ObjectId _id,
     final String name,
-    final String displayName
+    final String displayName,
+    final GitRepository gitRepository,
+    final URI logoUrl,
+    final List<NotificationChannel> discordNotificationChannels,
+    final String discordNotificationDownloadKey
   ) {
     final ProjectEntity entity = new ProjectEntity();
     entity._id = _id;
     entity.name = name;
     entity.displayName = displayName;
+    entity.gitRepository = gitRepository;
+    entity.logoUrl = logoUrl;
+    entity.discordNotificationChannels = discordNotificationChannels;
+    entity.discordNotificationDownloadKey = discordNotificationDownloadKey;
     return entity;
   }
 
@@ -50,5 +66,21 @@ public class ProjectEntity extends AbstractEntity {
 
   public String displayName() {
     return this.displayName;
+  }
+
+  public GitRepository gitRepository() {
+    return this.gitRepository;
+  }
+
+  public URI logoUrl() {
+    return this.logoUrl;
+  }
+
+  public List<NotificationChannel> discordNotificationChannels() {
+    return this.discordNotificationChannels;
+  }
+
+  public String discordNotificationDownloadKey() {
+    return this.discordNotificationDownloadKey;
   }
 }

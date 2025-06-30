@@ -18,8 +18,8 @@ package io.papermc.fill.model;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public record GitRepository(
-  String owner,
-  String name
+public record NotificationChannel(
+  long snowflake,
+  boolean includeGitCompare
 ) {
 }

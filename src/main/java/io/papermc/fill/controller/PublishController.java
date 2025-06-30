@@ -30,6 +30,7 @@ import io.papermc.fill.exception.NoSuchDownloadException;
 import io.papermc.fill.exception.NoSuchProjectException;
 import io.papermc.fill.exception.NoSuchVersionException;
 import io.papermc.fill.exception.PublishFailedException;
+import io.papermc.fill.model.BuildPublishListener;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.request.PublishRequest;
 import io.papermc.fill.model.request.UploadRequest;
@@ -42,6 +43,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
@@ -71,6 +73,7 @@ public class PublishController {
   private final VersionRepository versions;
   private final BuildRepository builds;
   private final BucketService buckets;
+  private final Set<BuildPublishListener> buildPublishListeners;
 
   private final LoadingCache<UUID, Payload> payloads = Caffeine.newBuilder()
     .expireAfterAccess(Duration.ofMinutes(5))
@@ -81,12 +84,14 @@ public class PublishController {
     final ProjectRepository projects,
     final VersionRepository versions,
     final BuildRepository builds,
-    final BucketService buckets
+    final BucketService buckets,
+    final Set<BuildPublishListener> buildPublishListeners
   ) {
     this.projects = projects;
     this.versions = versions;
     this.builds = builds;
     this.buckets = buckets;
+    this.buildPublishListeners = buildPublishListeners;
   }
 
   @CrossOrigin(methods = RequestMethod.POST)
@@ -179,6 +184,10 @@ public class PublishController {
     }
 
     this.builds.save(build);
+
+    for (final BuildPublishListener listener : this.buildPublishListeners) {
+      listener.onBuildPublished(project, version, build);
+    }
 
     return Responses.created(new PublishResponse(true, build._id()));
   }
