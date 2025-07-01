@@ -17,7 +17,8 @@ package io.papermc.fill.database;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.papermc.fill.model.GitRepository;
-import io.papermc.fill.model.NotificationChannel;
+import io.papermc.fill.model.DiscordNotificationChannel;
+import io.papermc.fill.model.Project;
 import java.net.URI;
 import java.util.List;
 import org.bson.types.ObjectId;
@@ -28,12 +29,12 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @CompoundIndex(def = "{'name': 1}", unique = true)
 @Document(collection = "projects")
 @NullMarked
-public class ProjectEntity extends AbstractEntity {
+public class ProjectEntity extends AbstractEntity implements Project {
   private String name;
   private String displayName;
   private GitRepository gitRepository;
   private URI logoUrl;
-  private List<NotificationChannel> discordNotificationChannels;
+  private List<DiscordNotificationChannel> discordNotificationChannels;
   private String discordNotificationDownloadKey;
 
   public ProjectEntity() {
@@ -46,7 +47,7 @@ public class ProjectEntity extends AbstractEntity {
     final String displayName,
     final GitRepository gitRepository,
     final URI logoUrl,
-    final List<NotificationChannel> discordNotificationChannels,
+    final List<DiscordNotificationChannel> discordNotificationChannels,
     final String discordNotificationDownloadKey
   ) {
     final ProjectEntity entity = new ProjectEntity();
@@ -60,6 +61,7 @@ public class ProjectEntity extends AbstractEntity {
     return entity;
   }
 
+  @Override
   public String name() {
     return this.name;
   }
@@ -76,7 +78,7 @@ public class ProjectEntity extends AbstractEntity {
     return this.logoUrl;
   }
 
-  public List<NotificationChannel> discordNotificationChannels() {
+  public List<DiscordNotificationChannel> discordNotificationChannels() {
     return this.discordNotificationChannels;
   }
 

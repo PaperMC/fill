@@ -15,12 +15,14 @@
  */
 package io.papermc.fill.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public record Commit(
-  String sha, // \b[0-9a-f]{40}\b
+  @Schema(pattern = "\\b[0-9a-f]{40}\\b")
+  String sha,
   Instant time,
   String message
 ) {

@@ -113,6 +113,7 @@ dependencies {
   implementation("com.google.guava:guava:33.4.8-jre")
   implementation("com.graphql-java:graphql-java-extended-scalars:22.0")
   implementation("org.apache.commons:commons-text:1.13.1")
+  implementation("org.eclipse.jgit:org.eclipse.jgit:7.3.0.202506031305-r")
   implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-data-mongodb")

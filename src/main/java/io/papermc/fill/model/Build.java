@@ -15,12 +15,16 @@
  */
 package io.papermc.fill.model;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public interface Build extends Timestamped {
+  Comparator<Build> COMPARATOR_NUMBER = Comparator.comparing(Build::number);
+  Comparator<Build> COMPARATOR_NUMBER_REVERSE = COMPARATOR_NUMBER.reversed();
+
   int number();
 
   BuildChannel channel();

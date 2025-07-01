@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.model.request;
+package io.papermc.fill.model;
 
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public record VersionCheckRequest(
-  String project,
-  String version,
-  int build,
-  String gitBranch,
-  String gitCommit
+public record DiscordNotificationChannel(
+  long snowflake,
+  boolean includeGitCompare
 ) {
 }

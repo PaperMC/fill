@@ -16,6 +16,7 @@
 package io.papermc.fill.discord;
 
 import discord4j.common.util.TimestampFormat;
+import discord4j.core.object.component.ActionComponent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.Container;
@@ -33,14 +34,16 @@ import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.VersionEntity;
+import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildPublishListener;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.GitRepository;
-import io.papermc.fill.model.NotificationChannel;
+import io.papermc.fill.model.DiscordNotificationChannel;
 import io.papermc.fill.service.BucketService;
 import io.papermc.fill.service.DiscordService;
 import io.papermc.fill.util.discord.Components;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.OptionalInt;
@@ -48,9 +51,11 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty("app.discord.token")
 @NullMarked
 public class DiscordNotifier implements BuildPublishListener {
   private final ApplicationDiscordProperties properties;
@@ -77,14 +82,14 @@ public class DiscordNotifier implements BuildPublishListener {
 
     final Container content = this.createContent(project, version, repository, build);
 
-    for (final NotificationChannel channel : project.discordNotificationChannels()) {
-      final MessageCreateSpec.Builder message = MessageCreateSpec.builder();
-      message.addFlag(Message.Flag.IS_COMPONENTS_V2);
-      message.allowedMentions(AllowedMentions.suppressEveryone());
-      message.addComponent(content);
-      message.addComponent(this.createButtons(project, version, repository, build, channel.includeGitCompare()));
-      final MessageCreateSpec request = message.build();
-      this.discord.createMessage(channel.snowflake(), request).subscribe();
+    for (final DiscordNotificationChannel channel : project.discordNotificationChannels()) {
+      final MessageCreateSpec message = MessageCreateSpec.builder()
+        .addFlag(Message.Flag.IS_COMPONENTS_V2)
+        .addComponent(content)
+        .addComponent(this.createButtons(project, version, repository, build, channel.includeGitCompare()))
+        .allowedMentions(AllowedMentions.suppressEveryone())
+        .build();
+      this.discord.createMessage(channel.snowflake(), message).subscribe();
     }
   }
 
@@ -141,27 +146,31 @@ public class DiscordNotifier implements BuildPublishListener {
   }
 
   private ActionRow createButtons(final ProjectEntity project, final VersionEntity version, final GitRepository repository, final BuildEntity build, final boolean includeGitCompare) {
-    return Components.row(OptionalInt.empty(), row -> {
-      final Download download = build.downloads().get(project.discordNotificationDownloadKey());
-      row.add(Button.link(download.withUrl(this.bucket.getDownloadUrl(build, download)).url().toString(), CustomEmoji.of(this.properties.emojis().download().id(), this.properties.emojis().download().name(), false), "Download"));
+    final List<ActionComponent> row0 = new ArrayList<>();
 
-      if (includeGitCompare) {
-        final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version)
-          .toList();
-        final BuildEntity buildBefore = getBuildBefore(builds);
-        if (buildBefore != null) {
-          row.add(Button.link(String.format(
-            "https://github.com/%s/%s/compare/%s..%s",
-            repository.owner(),
-            repository.name(),
-            buildBefore.commits().getFirst().sha(),
-            build.commits().getFirst().sha()
-          ), CustomEmoji.of(this.properties.emojis().gitCompare().id(), this.properties.emojis().gitCompare().name(), false), "GitHub Diff"));
-        }
+    final Download download = build.downloads().get(project.discordNotificationDownloadKey());
+    row0.add(Button.link(download.withUrl(this.bucket.getDownloadUrl(build, download)).url().toString(), CustomEmoji.of(this.properties.emojis().download().id(), this.properties.emojis().download().name(), false), "Download"));
+
+    if (includeGitCompare) {
+      final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version)
+        .sorted(Build.COMPARATOR_NUMBER)
+        .toList();
+      final BuildEntity buildBefore = getBuildBefore(builds);
+      if (buildBefore != null) {
+        row0.add(Button.link(String.format(
+          "https://diffs.dev/?github_url=https://github.com/%s/%s/compare/%s..%s",
+          repository.owner(),
+          repository.name(),
+          buildBefore.commits().getFirst().sha(),
+          build.commits().getFirst().sha()
+        ), CustomEmoji.of(this.properties.emojis().gitCompare().id(), this.properties.emojis().gitCompare().name(), false), "GitHub Diff"));
       }
-    });
+    }
+
+    return ActionRow.of(row0);
   }
 
+  // TODO: improve this logic
   private static @Nullable BuildEntity getBuildBefore(final List<BuildEntity> builds) {
     return builds.size() >= 2 ? builds.get(builds.size() - 2) : null;
   }

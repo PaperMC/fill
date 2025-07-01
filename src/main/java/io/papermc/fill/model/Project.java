@@ -15,11 +15,12 @@
  */
 package io.papermc.fill.model;
 
+import java.util.Comparator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public record NotificationChannel(
-  long snowflake,
-  boolean includeGitCompare
-) {
+public interface Project {
+  Comparator<Project> COMPARATOR_NAME = Comparator.comparing(Project::name);
+
+  String name();
 }

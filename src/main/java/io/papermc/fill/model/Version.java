@@ -15,11 +15,15 @@
  */
 package io.papermc.fill.model;
 
+import java.util.Comparator;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public interface Version extends Timestamped {
+  Comparator<Version> COMPARATOR_CREATED_AT = Comparator.comparing(Version::createdAt);
+  Comparator<Version> COMPARATOR_CREATED_AT_REVERSE = COMPARATOR_CREATED_AT.reversed();
+
   String name();
 
   Support support();

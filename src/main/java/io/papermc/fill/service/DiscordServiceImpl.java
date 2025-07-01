@@ -20,24 +20,21 @@ import discord4j.discordjson.json.MessageData;
 import discord4j.rest.RestClient;
 import io.papermc.fill.configuration.properties.ApplicationDiscordProperties;
 import org.jspecify.annotations.NullMarked;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+@ConditionalOnProperty("app.discord.token")
 @NullMarked
 @Service
 public class DiscordServiceImpl implements DiscordService {
-  private static final Logger LOGGER = LoggerFactory.getLogger(DiscordServiceImpl.class);
-  private final ApplicationDiscordProperties properties;
   private final RestClient rest;
 
   @Autowired
   public DiscordServiceImpl(
     final ApplicationDiscordProperties properties
   ) {
-    this.properties = properties;
     this.rest = RestClient.create(properties.token());
   }
 

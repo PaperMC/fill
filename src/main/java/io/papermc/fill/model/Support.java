@@ -16,6 +16,7 @@
 package io.papermc.fill.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -24,6 +25,7 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public record Support(
   SupportStatus status,
+  @Schema(nullable = true)
   @Nullable LocalDate end
 ) {
 }

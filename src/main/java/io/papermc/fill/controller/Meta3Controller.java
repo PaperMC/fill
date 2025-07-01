@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.controller;
 
+import com.google.common.collect.Lists;
 import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.ProjectEntity;
@@ -24,11 +25,13 @@ import io.papermc.fill.database.VersionRepository;
 import io.papermc.fill.exception.NoSuchBuildException;
 import io.papermc.fill.exception.NoSuchProjectException;
 import io.papermc.fill.exception.NoSuchVersionException;
+import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.DownloadWithUrl;
-import io.papermc.fill.model.FamilyComparator;
-import io.papermc.fill.model.VersionComparator;
+import io.papermc.fill.model.Family;
+import io.papermc.fill.model.Project;
+import io.papermc.fill.model.Version;
 import io.papermc.fill.model.response.ErrorResponse;
 import io.papermc.fill.model.response.v3.BuildResponse;
 import io.papermc.fill.model.response.v3.ProjectResponse;
@@ -49,7 +52,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,8 +81,6 @@ public class Meta3Controller {
   private static final Duration CACHE_LENGTH_BUILDS = Duration.ofMinutes(5);
   private static final Duration CACHE_LENGTH_BUILD = Duration.ofMinutes(30);
   private static final Duration CACHE_LENGTH_BUILD_LATEST = Duration.ofMinutes(5);
-
-  private static final Comparator<ProjectEntity> SORT_PROJECTS = Comparator.comparing(ProjectEntity::name);
 
   private final ProjectRepository projects;
   private final VersionRepository versions;
@@ -122,13 +122,12 @@ public class Meta3Controller {
     summary = "Get a list of all projects"
   )
   public ResponseEntity<?> getProjects() {
-    final List<ProjectEntity> projects = this.projects.findAll();
+    final List<ProjectEntity> projects = this.projects.findAll()
+      .stream()
+      .sorted(Project.COMPARATOR_NAME)
+      .toList();
     final ProjectsResponse response = new ProjectsResponse(
-      projects
-        .stream()
-        .sorted(SORT_PROJECTS)
-        .map(this::createProjectResponse)
-        .toList()
+      Lists.transform(projects, this::createProjectResponse)
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_PROJECTS));
   }
@@ -194,13 +193,10 @@ public class Meta3Controller {
   ) {
     final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
     final List<VersionEntity> versions = this.versions.findAllByProject(pe)
-      .toList()
-      .reversed();
+      .sorted(Version.COMPARATOR_CREATED_AT_REVERSE)
+      .toList();
     final VersionsResponse response = new VersionsResponse(
-      versions.stream()
-        .sorted(VersionComparator.CREATED_AT.reversed())
-        .map(this::createVersionResponse)
-        .toList()
+      Lists.transform(versions, this::createVersionResponse)
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_VERSIONS));
   }
@@ -278,9 +274,8 @@ public class Meta3Controller {
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final List<BuildEntity> bes = this.builds.findAllByProjectAndVersion(pe, ve)
       .filter(be -> (filterByChannel == null) || be.channel() == filterByChannel)
-      .sorted(Comparator.comparing(BuildEntity::number))
-      .toList()
-      .reversed();
+      .sorted(Build.COMPARATOR_NUMBER_REVERSE)
+      .toList();
     final List<BuildResponse> response = bes.stream()
       .map(this::createBuildResponse)
       .toList();
@@ -359,8 +354,8 @@ public class Meta3Controller {
     final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(pe, ve)
-      .toList()
-      .reversed();
+      .sorted(Build.COMPARATOR_NUMBER_REVERSE)
+      .toList();
     if (builds.isEmpty()) {
       throw new NoSuchBuildException();
     } else {
@@ -372,16 +367,13 @@ public class Meta3Controller {
 
   private ProjectResponse createProjectResponse(final ProjectEntity project) {
     final Map<String, List<String>> versions = this.versions.findAllByProject(project)
-      .toList()
-      .reversed()
-      .stream()
       .collect(Collectors.groupingBy(
         VersionEntity::family,
-        () -> new TreeMap<>(FamilyComparator.CREATED_AT.reversed()),
+        () -> new TreeMap<>(Family.COMPARATOR_CREATED_AT_REVERSE),
         Collectors.collectingAndThen(
           Collectors.toList(),
           list -> {
-            list.sort(VersionComparator.CREATED_AT.reversed());
+            list.sort(Version.COMPARATOR_CREATED_AT_REVERSE);
             return list;
           }
         )
@@ -405,7 +397,7 @@ public class Meta3Controller {
 
   private VersionResponse createVersionResponse(final VersionEntity version) {
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(version.project(), version)
-      .sorted(Comparator.comparing(BuildEntity::number))
+      .sorted(Build.COMPARATOR_NUMBER_REVERSE)
       .toList();
     return new VersionResponse(
       new VersionResponse.Version(
@@ -413,11 +405,7 @@ public class Meta3Controller {
         version.support(),
         Objects.requireNonNullElse(version.java(), version.family().java())
       ),
-      builds
-        .reversed()
-        .stream()
-        .map(BuildEntity::number)
-        .toList()
+      Lists.transform(builds, BuildEntity::number)
     );
   }
 

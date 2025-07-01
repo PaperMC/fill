@@ -24,10 +24,12 @@ import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
 import io.papermc.fill.graphql.input.BuildFilters;
 import io.papermc.fill.graphql.input.VersionFilters;
+import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.DownloadWithUrl;
 import io.papermc.fill.model.Java;
+import io.papermc.fill.model.Project;
 import io.papermc.fill.model.SupportStatus;
 import io.papermc.fill.service.BucketService;
 import java.time.ZoneOffset;
@@ -69,7 +71,10 @@ public class GraphQueryController {
 
   @QueryMapping("projects")
   public List<ProjectEntity> getProjects() {
-    return this.projects.findAll();
+    return this.projects.findAll()
+      .stream()
+      .sorted(Project.COMPARATOR_NAME)
+      .toList();
   }
 
   @QueryMapping("project")
@@ -97,11 +102,11 @@ public class GraphQueryController {
     if (last != null) {
       versions = this.versions.findAllByProject(project, PageRequest.of(0, last, Sort.by(Sort.Direction.DESC, "_id")))
         .getContent()
-        .reversed()
         .stream();
     } else {
       versions = this.versions.findAllByProject(project);
     }
+    versions = versions.sorted(VersionEntity.COMPARATOR_CREATED_AT_REVERSE);
     if (filterBy != null) {
       final SupportStatus supportStatus = filterBy.supportStatus();
       if (supportStatus != null) {
@@ -147,11 +152,11 @@ public class GraphQueryController {
     if (last != null) {
       builds = this.builds.findAllByProjectAndVersion(version.project(), version, PageRequest.of(0, last, Sort.by(Sort.Direction.DESC, "_id")))
         .getContent()
-        .reversed()
         .stream();
     } else {
       builds = this.builds.findAllByProjectAndVersion(version.project(), version);
     }
+    builds = builds.sorted(Build.COMPARATOR_NUMBER_REVERSE);
     if (filterBy != null) {
       final BuildChannel filterByChannel = filterBy.channel();
       if (filterByChannel != null) {

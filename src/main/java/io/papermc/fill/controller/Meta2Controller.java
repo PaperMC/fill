@@ -29,10 +29,11 @@ import io.papermc.fill.exception.NoSuchBuildException;
 import io.papermc.fill.exception.NoSuchFamilyException;
 import io.papermc.fill.exception.NoSuchProjectException;
 import io.papermc.fill.exception.NoSuchVersionException;
+import io.papermc.fill.model.Build;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
-import io.papermc.fill.model.FamilyComparator;
-import io.papermc.fill.model.VersionComparator;
+import io.papermc.fill.model.Family;
+import io.papermc.fill.model.Version;
 import io.papermc.fill.model.response.v2.BuildResponse;
 import io.papermc.fill.model.response.v2.BuildsResponse;
 import io.papermc.fill.model.response.v2.FamilyBuildsResponse;
@@ -47,7 +48,6 @@ import io.papermc.fill.util.http.Responses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Duration;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -114,8 +114,8 @@ public class Meta2Controller {
     final ProjectResponse response = new ProjectResponse(
       pe.name(),
       pe.displayName(),
-      families.stream().sorted(FamilyComparator.CREATED_AT).map(FamilyEntity::name).toList(),
-      versions.stream().sorted(VersionComparator.CREATED_AT).map(VersionEntity::name).toList()
+      families.stream().sorted(Family.COMPARATOR_CREATED_AT).map(FamilyEntity::name).toList(),
+      versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::name).toList()
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_PROJECT));
   }
@@ -135,7 +135,7 @@ public class Meta2Controller {
       pe.name(),
       pe.displayName(),
       fe.name(),
-      versions.stream().sorted(VersionComparator.CREATED_AT).map(VersionEntity::name).toList()
+      versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::name).toList()
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_FAMILY));
   }
@@ -153,13 +153,13 @@ public class Meta2Controller {
     final List<VersionEntity> versions = this.versions.findAllByProjectAndFamily(pe, fe).toList();
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersionIn(pe, versions)
       .filter(build -> isAllowed(build))
-      .sorted(Comparator.comparing(BuildEntity::number))
+      .sorted(Build.COMPARATOR_NUMBER)
       .toList();
     final FamilyBuildsResponse response = new FamilyBuildsResponse(
       pe.name(),
       pe.displayName(),
       fe.name(),
-      versions.stream().sorted(VersionComparator.CREATED_AT).map(VersionEntity::name).toList(),
+      versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::name).toList(),
       builds.stream().map(be -> new FamilyBuildsResponse.Build(
         be.version().name(),
         be.number(),
@@ -185,7 +185,7 @@ public class Meta2Controller {
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(pe, ve)
       .filter(build -> isAllowed(build))
-      .sorted(Comparator.comparing(BuildEntity::number))
+      .sorted(Build.COMPARATOR_NUMBER)
       .toList();
     final VersionResponse response = new VersionResponse(
       pe.name(),
@@ -208,7 +208,7 @@ public class Meta2Controller {
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(pe, ve)
       .filter(build -> isAllowed(build))
-      .sorted(Comparator.comparing(BuildEntity::number))
+      .sorted(Build.COMPARATOR_NUMBER)
       .toList();
     final BuildsResponse response = new BuildsResponse(
       pe.name(),
