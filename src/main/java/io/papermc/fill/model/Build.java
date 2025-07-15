@@ -17,20 +17,23 @@ package io.papermc.fill.model;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.function.Predicate;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public interface Build extends Timestamped {
-  Comparator<Build> COMPARATOR_NUMBER = Comparator.comparing(Build::number);
-  Comparator<Build> COMPARATOR_NUMBER_REVERSE = COMPARATOR_NUMBER.reversed();
+  Comparator<Build> COMPARATOR_ID = Comparator.comparing(Build::id);
+  Comparator<Build> COMPARATOR_ID_REVERSE = COMPARATOR_ID.reversed();
 
-  int number();
+  int id();
 
   BuildChannel channel();
 
+  static Predicate<Build> isChannel(final @Nullable BuildChannel channel) {
+    return build -> channel == null || build.channel() == channel;
+  }
+
   // descending
   List<Commit> commits();
-
-  Map<String, Download> downloads();
 }

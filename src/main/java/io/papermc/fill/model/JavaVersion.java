@@ -18,8 +18,7 @@ package io.papermc.fill.model;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public record Java(
-  JavaVersion version,
-  JavaFlags flags
+public record JavaVersion(
+  int minimum
 ) {
 }

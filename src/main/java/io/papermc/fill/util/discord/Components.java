@@ -15,8 +15,6 @@
  */
 package io.papermc.fill.util.discord;
 
-import discord4j.core.object.component.ActionComponent;
-import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Container;
 import discord4j.core.object.component.ICanBeUsedInContainerComponent;
 import discord4j.core.object.component.MessageComponent;
@@ -46,13 +44,6 @@ public final class Components {
     return id.isPresent()
       ? Container.of(id.getAsInt(), color, spoiler, components)
       : Container.of(color, spoiler, components);
-  }
-
-  public static <C extends ActionComponent> ActionRow row(final OptionalInt id, final Consumer<Builder<C>> consumer) {
-    final List<C> components = createList(consumer);
-    return id.isPresent()
-      ? ActionRow.of(id.getAsInt(), components)
-      : ActionRow.of(components);
   }
 
   private static <T> List<T> createList(final Consumer<Builder<T>> consumer) {

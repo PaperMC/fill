@@ -13,13 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.model;
+package io.papermc.fill.configuration;
 
+import discord4j.rest.RestClient;
+import io.papermc.fill.configuration.properties.ApplicationDiscordProperties;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
+@Configuration
 @NullMarked
-public record Java(
-  JavaVersion version,
-  JavaFlags flags
-) {
+public class DiscordConfiguration {
+  @Bean
+  @ConditionalOnProperty("app.discord.token")
+  public RestClient restClient(final ApplicationDiscordProperties properties) {
+    return RestClient.create(properties.token());
+  }
 }

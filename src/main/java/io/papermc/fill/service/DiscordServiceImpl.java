@@ -18,7 +18,6 @@ package io.papermc.fill.service;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.discordjson.json.MessageData;
 import discord4j.rest.RestClient;
-import io.papermc.fill.configuration.properties.ApplicationDiscordProperties;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -33,9 +32,9 @@ public class DiscordServiceImpl implements DiscordService {
 
   @Autowired
   public DiscordServiceImpl(
-    final ApplicationDiscordProperties properties
+    final RestClient rest
   ) {
-    this.rest = RestClient.create(properties.token());
+    this.rest = rest;
   }
 
   @Override

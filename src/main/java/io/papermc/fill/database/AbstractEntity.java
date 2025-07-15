@@ -32,7 +32,7 @@ public abstract class AbstractEntity implements Timestamped {
   @LastModifiedDate
   protected Instant updatedAt;
 
-  public ObjectId _id() {
+  public final ObjectId _id() {
     return this._id;
   }
 

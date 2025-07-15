@@ -15,8 +15,8 @@
  */
 package io.papermc.fill.database;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Repository;
 @NullMarked
 @Repository
 public interface FamilyRepository extends MongoRepository<FamilyEntity, ObjectId> {
-  List<FamilyEntity> findAllByProject(final ProjectEntity project);
+  Stream<FamilyEntity> findAllByProject(final ProjectEntity project);
 
   Optional<FamilyEntity> findByProjectAndName(
     final ProjectEntity project,

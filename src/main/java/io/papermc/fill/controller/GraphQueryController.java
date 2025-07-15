@@ -31,6 +31,7 @@ import io.papermc.fill.model.DownloadWithUrl;
 import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Project;
 import io.papermc.fill.model.SupportStatus;
+import io.papermc.fill.model.Version;
 import io.papermc.fill.service.BucketService;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -106,7 +107,7 @@ public class GraphQueryController {
     } else {
       versions = this.versions.findAllByProject(project);
     }
-    versions = versions.sorted(VersionEntity.COMPARATOR_CREATED_AT_REVERSE);
+    versions = versions.sorted(Version.COMPARATOR_CREATED_AT_REVERSE);
     if (filterBy != null) {
       final SupportStatus supportStatus = filterBy.supportStatus();
       if (supportStatus != null) {
@@ -156,11 +157,11 @@ public class GraphQueryController {
     } else {
       builds = this.builds.findAllByProjectAndVersion(version.project(), version);
     }
-    builds = builds.sorted(Build.COMPARATOR_NUMBER_REVERSE);
+    builds = builds.sorted(Build.COMPARATOR_ID_REVERSE);
     if (filterBy != null) {
       final BuildChannel filterByChannel = filterBy.channel();
       if (filterByChannel != null) {
-        builds = builds.filter(entity -> entity.channel() == filterByChannel);
+        builds = builds.filter(Build.isChannel(filterByChannel));
       }
     }
     return builds.toList();
@@ -168,7 +169,7 @@ public class GraphQueryController {
 
   @SchemaMapping(typeName = "Build", field = "id")
   public int mapBuildId(final BuildEntity build) {
-    return build.number();
+    return build.id();
   }
 
   @SchemaMapping(typeName = "Build", field = "time")

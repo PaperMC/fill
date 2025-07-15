@@ -15,11 +15,10 @@
  */
 package io.papermc.fill.model;
 
+import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public record Java(
-  JavaVersion version,
-  JavaFlags flags
-) {
+public interface BuildWithDownloads<D> extends Build {
+  Map<String, D> downloads();
 }

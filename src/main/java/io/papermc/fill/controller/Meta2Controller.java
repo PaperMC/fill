@@ -109,7 +109,7 @@ public class Meta2Controller {
     final String project
   ) {
     final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
-    final List<FamilyEntity> families = this.families.findAllByProject(pe);
+    final List<FamilyEntity> families = this.families.findAllByProject(pe).toList();
     final List<VersionEntity> versions = this.versions.findAllByProject(pe).toList();
     final ProjectResponse response = new ProjectResponse(
       pe.name(),
@@ -152,8 +152,7 @@ public class Meta2Controller {
     final FamilyEntity fe = this.families.findByProjectAndName(pe, family).orElseThrow(NoSuchFamilyException::new);
     final List<VersionEntity> versions = this.versions.findAllByProjectAndFamily(pe, fe).toList();
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersionIn(pe, versions)
-      .filter(build -> isAllowed(build))
-      .sorted(Build.COMPARATOR_NUMBER)
+      .sorted(Build.COMPARATOR_ID)
       .toList();
     final FamilyBuildsResponse response = new FamilyBuildsResponse(
       pe.name(),
@@ -162,7 +161,7 @@ public class Meta2Controller {
       versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::name).toList(),
       builds.stream().map(be -> new FamilyBuildsResponse.Build(
         be.version().name(),
-        be.number(),
+        be.id(),
         be.createdAt(),
         be.channel(),
         BuildEntity.isPromoted(be),
@@ -184,14 +183,13 @@ public class Meta2Controller {
     final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(pe, ve)
-      .filter(build -> isAllowed(build))
-      .sorted(Build.COMPARATOR_NUMBER)
+      .sorted(Build.COMPARATOR_ID)
       .toList();
     final VersionResponse response = new VersionResponse(
       pe.name(),
       pe.displayName(),
       ve.name(),
-      builds.stream().map(BuildEntity::number).toList()
+      builds.stream().map(BuildEntity::id).toList()
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_VERSION));
   }
@@ -207,15 +205,14 @@ public class Meta2Controller {
     final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(pe, ve)
-      .filter(build -> isAllowed(build))
-      .sorted(Build.COMPARATOR_NUMBER)
+      .sorted(Build.COMPARATOR_ID)
       .toList();
     final BuildsResponse response = new BuildsResponse(
       pe.name(),
       pe.displayName(),
       ve.name(),
       builds.stream().map(be -> new BuildsResponse.Build(
-        be.number(),
+        be.id(),
         be.createdAt(),
         be.channel(),
         BuildEntity.isPromoted(be),
@@ -240,14 +237,11 @@ public class Meta2Controller {
     final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final BuildEntity be = this.builds.findByProjectAndVersionAndNumber(pe, ve, build).orElseThrow(NoSuchBuildException::new);
-    if (!isAllowed(be)) {
-      throw new NoSuchBuildException();
-    }
     final BuildResponse response = new BuildResponse(
       pe.name(),
       pe.displayName(),
       ve.name(),
-      be.number(),
+      be.id(),
       be.createdAt(),
       be.channel(),
       BuildEntity.isPromoted(be),
@@ -255,10 +249,6 @@ public class Meta2Controller {
       this.toDownloads(pe.name(), be.downloads())
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_BUILD));
-  }
-
-  private static boolean isAllowed(final BuildEntity build) {
-    return true;
   }
 
   private static List<LegacyChange> toChanges(final List<Commit> commits) {

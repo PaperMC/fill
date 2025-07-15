@@ -43,7 +43,7 @@ public interface BucketService {
       Map.of(
         PROJECT_NAME, build.project().name(),
         VERSION_NAME, build.version().name(),
-        BUILD_NUMBER, build.number(),
+        BUILD_NUMBER, build.id(),
         DOWNLOAD_FILENAME, download.name(),
         DOWNLOAD_SHA256, download.checksums().sha256()
       )

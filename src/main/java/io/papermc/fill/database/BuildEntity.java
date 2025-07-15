@@ -15,8 +15,8 @@
  */
 package io.papermc.fill.database;
 
-import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
+import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.LegacyBuildChannel;
@@ -29,17 +29,19 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DocumentReference;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 @CompoundIndex(def = "{'project': 1}")
 @CompoundIndex(def = "{'project': 1, 'version': 1}")
 @CompoundIndex(def = "{'project': 1, 'version': 1, 'number': 1}", unique = true)
 @Document(collection = "builds")
 @NullMarked
-public class BuildEntity extends AbstractEntity implements Build {
+public class BuildEntity extends AbstractEntity implements BuildWithDownloads<Download> {
   @DocumentReference
   private ProjectEntity project;
   @DocumentReference
   private VersionEntity version;
+  @Field("number")
   private int number;
   private BuildChannel channel;
   @Deprecated
@@ -81,7 +83,7 @@ public class BuildEntity extends AbstractEntity implements Build {
   }
 
   @Override
-  public int number() {
+  public int id() {
     return this.number;
   }
 
@@ -111,6 +113,6 @@ public class BuildEntity extends AbstractEntity implements Build {
 
   public static boolean isPromoted(final BuildEntity build) {
     final BuildEntity promotedBuild = build.version().promotedBuild();
-    return promotedBuild != null && promotedBuild.number() == build.number();
+    return promotedBuild != null && promotedBuild.id() == build.id();
   }
 }

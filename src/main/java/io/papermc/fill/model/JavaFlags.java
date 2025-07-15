@@ -15,11 +15,11 @@
  */
 package io.papermc.fill.model;
 
+import java.util.List;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public record Java(
-  JavaVersion version,
-  JavaFlags flags
+public record JavaFlags(
+  List<String> recommended
 ) {
 }

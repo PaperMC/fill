@@ -273,8 +273,8 @@ public class Meta3Controller {
     final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final List<BuildEntity> bes = this.builds.findAllByProjectAndVersion(pe, ve)
-      .filter(be -> filterByChannel == null || be.channel() == filterByChannel)
-      .sorted(Build.COMPARATOR_NUMBER_REVERSE)
+      .filter(Build.isChannel(filterByChannel))
+      .sorted(Build.COMPARATOR_ID_REVERSE)
       .toList();
     final List<BuildResponse> response = bes.stream()
       .map(this::createBuildResponse)
@@ -354,7 +354,7 @@ public class Meta3Controller {
     final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(pe, ve)
-      .sorted(Build.COMPARATOR_NUMBER_REVERSE)
+      .sorted(Build.COMPARATOR_ID_REVERSE)
       .toList();
     if (builds.isEmpty()) {
       throw new NoSuchBuildException();
@@ -397,7 +397,7 @@ public class Meta3Controller {
 
   private VersionResponse createVersionResponse(final VersionEntity version) {
     final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(version.project(), version)
-      .sorted(Build.COMPARATOR_NUMBER_REVERSE)
+      .sorted(Build.COMPARATOR_ID_REVERSE)
       .toList();
     return new VersionResponse(
       new VersionResponse.Version(
@@ -405,7 +405,7 @@ public class Meta3Controller {
         version.support(),
         Objects.requireNonNullElse(version.java(), version.family().java())
       ),
-      Lists.transform(builds, BuildEntity::number)
+      Lists.transform(builds, Build::id)
     );
   }
 
@@ -419,6 +419,6 @@ public class Meta3Controller {
         return Map.entry(entry.getKey(), downloadWithUrl);
       })
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    return new BuildResponse(build.number(), build.createdAt(), build.channel(), build.commits(), downloads);
+    return new BuildResponse(build.id(), build.createdAt(), build.channel(), build.commits(), downloads);
   }
 }

@@ -101,7 +101,7 @@ public class DiscordNotifier implements BuildPublishListener {
           List.of(
             TextDisplay.of(String.format(
               "# Build %d for %s %s",
-              build.number(),
+              build.id(),
               project.displayName(),
               version.name()
             )),
@@ -153,7 +153,7 @@ public class DiscordNotifier implements BuildPublishListener {
 
     if (includeGitCompare) {
       final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version)
-        .sorted(Build.COMPARATOR_NUMBER)
+        .sorted(Build.COMPARATOR_ID)
         .toList();
       final BuildEntity buildBefore = getBuildBefore(builds);
       if (buildBefore != null) {
