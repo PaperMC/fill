@@ -26,7 +26,7 @@ public record Commit(
   Instant time,
   String message
 ) {
-  public static String getShortSha(final Commit commit)  {
+  public static String getShortSha(final Commit commit) {
     return commit.sha().substring(0, 7);
   }
 

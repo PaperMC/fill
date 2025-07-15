@@ -10,6 +10,7 @@ plugins {
   alias(libs.plugins.graalvm.native)
   alias(libs.plugins.gradleGitProperties)
   alias(libs.plugins.indra)
+  alias(libs.plugins.indra.checkstyle)
   alias(libs.plugins.indra.git)
   alias(libs.plugins.jib)
   alias(libs.plugins.spotless)
@@ -89,6 +90,16 @@ spotless {
   }
 }
 
+tasks {
+  checkstyleAot {
+    isEnabled = false
+  }
+
+  checkstyleAotTest {
+    isEnabled = false
+  }
+}
+
 repositories {
   mavenCentral()
   maven("https://oss.sonatype.org/content/repositories/snapshots/") {
@@ -105,15 +116,13 @@ dependencies {
 
   developmentOnly("org.springframework.boot:spring-boot-devtools")
 
-  implementation("com.auth0:java-jwt:4.4.0")
   implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.14.0")
   implementation("com.bucket4j:bucket4j_jdk17-core:8.14.0")
   implementation("com.discord4j:discord4j-core:3.3.0-RC2")
   implementation("com.github.ben-manes.caffeine:caffeine:3.2.1")
   implementation("com.google.guava:guava:33.4.8-jre")
-  implementation("com.graphql-java:graphql-java-extended-scalars:22.0")
+  implementation("com.graphql-java:graphql-java-extended-scalars:24.0")
   implementation("org.apache.commons:commons-text:1.13.1")
-  implementation("org.eclipse.jgit:org.eclipse.jgit:7.3.0.202506031305-r")
   implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
@@ -122,7 +131,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-validation")
   implementation("org.springframework.boot:spring-boot-starter-web")
-  implementation("software.amazon.awssdk:s3:2.31.66")
+  implementation("software.amazon.awssdk:s3:2.31.78")
 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.graphql:spring-graphql-test")

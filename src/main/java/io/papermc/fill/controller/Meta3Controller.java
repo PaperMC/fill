@@ -273,7 +273,7 @@ public class Meta3Controller {
     final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
     final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
     final List<BuildEntity> bes = this.builds.findAllByProjectAndVersion(pe, ve)
-      .filter(be -> (filterByChannel == null) || be.channel() == filterByChannel)
+      .filter(be -> filterByChannel == null || be.channel() == filterByChannel)
       .sorted(Build.COMPARATOR_NUMBER_REVERSE)
       .toList();
     final List<BuildResponse> response = bes.stream()

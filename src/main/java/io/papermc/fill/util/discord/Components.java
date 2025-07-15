@@ -38,6 +38,9 @@ public final class Components {
   public static final Color COLOR_RED = Color.of(0xff6f61);
   public static final Color COLOR_YELLOW = Color.of(0xfff176);
 
+  private Components() {
+  }
+
   public static <C extends MessageComponent & ICanBeUsedInContainerComponent> Container container(final OptionalInt id, final Consumer<Builder<C>> consumer, final @Nullable Color color, final boolean spoiler) {
     final List<C> components = createList(consumer);
     return id.isPresent()
