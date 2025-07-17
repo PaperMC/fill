@@ -131,7 +131,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-validation")
   implementation("org.springframework.boot:spring-boot-starter-web")
-  implementation("software.amazon.awssdk:s3:2.31.78")
+  implementation("software.amazon.awssdk:s3:2.32.2")
 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.graphql:spring-graphql-test")
