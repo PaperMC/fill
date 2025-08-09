@@ -131,7 +131,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-validation")
   implementation("org.springframework.boot:spring-boot-starter-web")
-  implementation("software.amazon.awssdk:s3:2.32.2")
+  implementation("software.amazon.awssdk:s3:2.32.19")
   implementation("io.micrometer:micrometer-registry-prometheus")
 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
