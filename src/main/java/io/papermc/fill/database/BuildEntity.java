@@ -45,7 +45,7 @@ public class BuildEntity extends AbstractEntity implements BuildWithDownloads<Do
   private int number;
   private BuildChannel channel;
   @Deprecated
-  public @Nullable LegacyBuildChannel channelO;
+  private @Nullable LegacyBuildChannel channelO;
   private List<Commit> commits;
   private Map<String, Download> downloads;
 
@@ -109,10 +109,5 @@ public class BuildEntity extends AbstractEntity implements BuildWithDownloads<Do
   @Override
   public Map<String, Download> downloads() {
     return this.downloads;
-  }
-
-  public static boolean isPromoted(final BuildEntity build) {
-    final BuildEntity promotedBuild = build.version().promotedBuild();
-    return promotedBuild != null && promotedBuild.id() == build.id();
   }
 }

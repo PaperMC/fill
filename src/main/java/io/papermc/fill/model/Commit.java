@@ -15,8 +15,11 @@
  */
 package io.papermc.fill.model;
 
+import com.google.common.annotations.VisibleForTesting;
+import io.papermc.fill.exception.CommitOrderValidationException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
+import java.util.List;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -28,6 +31,23 @@ public record Commit(
 ) {
   public static String getShortSha(final Commit commit) {
     return commit.sha().substring(0, 7);
+  }
+
+  @VisibleForTesting
+  public static void checkOrder(final List<Commit> commits) {
+    for (int i = 0; i < commits.size() - 1; i++) {
+      final Commit current = commits.get(i);
+      final Commit next = commits.get(i + 1);
+      if (current.time().isBefore(next.time())) {
+        throw new CommitOrderValidationException(String.format(
+          "Commit order validation failed: index %d (%s) comes before index %d (%s); expected newest-to-oldest",
+          i,
+          current,
+          i + 1,
+          next
+        ));
+      }
+    }
   }
 
   public String summary() {

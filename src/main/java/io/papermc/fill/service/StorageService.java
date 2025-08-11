@@ -17,7 +17,11 @@ package io.papermc.fill.service;
 
 import io.papermc.fill.configuration.properties.ApplicationApiProperties;
 import io.papermc.fill.database.BuildEntity;
+import io.papermc.fill.model.Build;
+import io.papermc.fill.model.Checksums;
 import io.papermc.fill.model.Download;
+import io.papermc.fill.model.Project;
+import io.papermc.fill.model.Version;
 import java.net.URI;
 import java.util.Map;
 import org.apache.commons.text.StringSubstitutor;
@@ -26,23 +30,35 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 
 @NullMarked
-public interface BucketService {
+public interface StorageService {
   String PROJECT_NAME = "project_name";
   String VERSION_NAME = "version_name";
   String BUILD_NUMBER = "build_number";
   String DOWNLOAD_FILENAME = "download_filename";
   String DOWNLOAD_SHA256 = "download_sha256";
 
-  static URI createUri(final ApplicationApiProperties.Storage configuration, final BuildEntity build, final Download download) {
-    return configuration.url().resolve(createPath(configuration.path(), build, download));
+  static URI createUri(
+    final ApplicationApiProperties.Storage configuration,
+    final Project project,
+    final Version version,
+    final Build build,
+    final Download download
+  ) {
+    return configuration.url().resolve(createPath(configuration.path(), project, version, build, download));
   }
 
-  static String createPath(final String template, final BuildEntity build, final Download download) {
+  static String createPath(
+    final String template,
+    final Project project,
+    final Version version,
+    final Build build,
+    final Download download
+  ) {
     return StringSubstitutor.replace(
       template,
       Map.of(
-        PROJECT_NAME, build.project().name(),
-        VERSION_NAME, build.version().name(),
+        PROJECT_NAME, project.name(),
+        VERSION_NAME, version.name(),
         BUILD_NUMBER, build.id(),
         DOWNLOAD_FILENAME, download.name(),
         DOWNLOAD_SHA256, download.checksums().sha256()
@@ -50,12 +66,37 @@ public interface BucketService {
     );
   }
 
-  URI getDownloadUrl(final BuildEntity build, final Download download);
+  @Deprecated
+  default URI getDownloadUrl(
+    final BuildEntity build,
+    final Download download
+  ) {
+    return this.getDownloadUrl(build.project(), build.version(), build, download);
+  }
 
-  void putObject(final BuildEntity build, final Download download, final byte[] content);
+  URI getDownloadUrl(
+    final Project project,
+    final Version version,
+    final Build build,
+    final Download download
+  );
+
+  void putObject(
+    final Project project,
+    final Version version,
+    final Build build,
+    final Download download,
+    final byte[] content,
+    final Checksums checksums
+  );
 
   @Deprecated
-  @Nullable Asset getAsset(final BuildEntity build, final Download download);
+  @Nullable Asset getAsset(
+    final Project project,
+    final Version version,
+    final Build build,
+    final Download download
+  );
 
   @Deprecated
   @NullMarked

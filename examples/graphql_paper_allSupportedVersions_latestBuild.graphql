@@ -13,6 +13,10 @@ query {
     id
     versions(filterBy: {supportStatus: SUPPORTED}) {
       id
+      support {
+        status
+        end
+      }
       java {
         version {
           minimum

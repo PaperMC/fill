@@ -19,7 +19,7 @@ import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public class PublishFailedException extends AppException {
-  public PublishFailedException(final Throwable cause) {
-    super("Publishing the build failed.", cause);
+  public PublishFailedException(final String message, final Throwable cause) {
+    super(message, cause);
   }
 }

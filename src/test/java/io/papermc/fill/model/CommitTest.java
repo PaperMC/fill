@@ -33,7 +33,7 @@ class CommitTest {
 
   @ParameterizedTest
   @ValueSource(strings = {
-    "This is a test.\n\nA what?\r\nA test.\r\nA what?\r\nA test.\r\nOh, a test.",
+    "This is a test.\r\nA what?\r\nA test.\r\nA what?\r\nA test.\r\nOh, a test.",
     "This is a test.\n\nA what?\n\nA test.\n\nA what?\n\nA test.\n\nOh, a test."
   })
   void testSummary(final String message) {

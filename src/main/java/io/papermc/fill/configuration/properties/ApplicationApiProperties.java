@@ -59,8 +59,17 @@ public record ApplicationApiProperties(
      * - "download_filename": the file name of the download
      * - "download_sha256": the sha256 hash of the download
      */
-    String path
+    String path,
+    @Deprecated
+    LegacyRetrievalStrategy legacyRetrievalStrategy
   ) {
+    @Deprecated
+    @NullMarked
+    public enum LegacyRetrievalStrategy {
+      BUCKET,
+      HTTP,
+    }
+
     @NullMarked
     public record S3(
       @Nullable URI endpoint,

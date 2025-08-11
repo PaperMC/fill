@@ -38,7 +38,7 @@ import io.papermc.fill.model.response.v3.ProjectResponse;
 import io.papermc.fill.model.response.v3.ProjectsResponse;
 import io.papermc.fill.model.response.v3.VersionResponse;
 import io.papermc.fill.model.response.v3.VersionsResponse;
-import io.papermc.fill.service.BucketService;
+import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.http.Caching;
 import io.papermc.fill.util.http.Responses;
 import io.swagger.v3.oas.annotations.Operation;
@@ -85,19 +85,19 @@ public class Meta3Controller {
   private final ProjectRepository projects;
   private final VersionRepository versions;
   private final BuildRepository builds;
-  private final BucketService bucket;
+  private final StorageService storage;
 
   @Autowired
   public Meta3Controller(
     final ProjectRepository projects,
     final VersionRepository versions,
     final BuildRepository builds,
-    final BucketService bucket
+    final StorageService storage
   ) {
     this.projects = projects;
     this.versions = versions;
     this.builds = builds;
-    this.bucket = bucket;
+    this.storage = storage;
   }
 
   @CrossOrigin(methods = RequestMethod.GET)
@@ -155,11 +155,11 @@ public class Meta3Controller {
   )
   public ResponseEntity<?> getProject(
     @Parameter(description = "The name of the project")
-    @PathVariable
-    final String project
+    @PathVariable("project")
+    final String projectName
   ) {
-    final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
-    final ProjectResponse response = this.createProjectResponse(pe);
+    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
+    final ProjectResponse response = this.createProjectResponse(project);
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_PROJECT));
   }
 
@@ -188,11 +188,11 @@ public class Meta3Controller {
   )
   public ResponseEntity<?> getVersions(
     @Parameter(description = "The name of the project")
-    @PathVariable
-    final String project
+    @PathVariable("project")
+    final String projectName
   ) {
-    final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
-    final List<VersionEntity> versions = this.versions.findAllByProject(pe)
+    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
+    final List<VersionEntity> versions = this.versions.findAllByProject(project)
       .sorted(Version.COMPARATOR_CREATED_AT_REVERSE)
       .toList();
     final VersionsResponse response = new VersionsResponse(
@@ -224,15 +224,15 @@ public class Meta3Controller {
   )
   public ResponseEntity<?> getVersion(
     @Parameter(description = "The name of the project")
-    @PathVariable
-    final String project,
+    @PathVariable("project")
+    final String projectName,
     @Parameter(description = "The name of the version")
-    @PathVariable
-    final String version
+    @PathVariable("version")
+    final String versionName
   ) {
-    final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
-    final VersionResponse response = this.createVersionResponse(ve);
+    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionName).orElseThrow(NoSuchVersionException::new);
+    final VersionResponse response = this.createVersionResponse(version);
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_VERSION));
   }
 
@@ -261,23 +261,23 @@ public class Meta3Controller {
   )
   public ResponseEntity<?> getBuilds(
     @Parameter(description = "The name of the project")
-    @PathVariable
-    final String project,
+    @PathVariable("project")
+    final String projectName,
     @Parameter(description = "The name of the version")
-    @PathVariable
-    final String version,
+    @PathVariable("version")
+    final String versionName,
     @Parameter(in = ParameterIn.QUERY, description = "Filter builds by channel")
     @RequestParam(name = "channel", required = false)
     final @Nullable BuildChannel filterByChannel
   ) {
-    final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
-    final List<BuildEntity> bes = this.builds.findAllByProjectAndVersion(pe, ve)
+    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionName).orElseThrow(NoSuchVersionException::new);
+    final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version)
       .filter(Build.isChannel(filterByChannel))
       .sorted(Build.COMPARATOR_ID_REVERSE)
       .toList();
-    final List<BuildResponse> response = bes.stream()
-      .map(this::createBuildResponse)
+    final List<BuildResponse> response = builds.stream()
+      .map(build -> this.createBuildResponse(project, version, build))
       .toList();
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_BUILDS));
   }
@@ -305,20 +305,20 @@ public class Meta3Controller {
   )
   public ResponseEntity<?> getBuild(
     @Parameter(description = "The name of the project")
-    @PathVariable
-    final String project,
+    @PathVariable("project")
+    final String projectName,
     @Parameter(description = "The name of the version")
-    @PathVariable
-    final String version,
+    @PathVariable("version")
+    final String versionName,
     @Parameter(description = "The name of the build")
-    @PathVariable
+    @PathVariable("build")
     @PositiveOrZero
-    final int build
+    final int buildId
   ) {
-    final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
-    final BuildEntity be = this.builds.findByProjectAndVersionAndNumber(pe, ve, build).orElseThrow(NoSuchBuildException::new);
-    final BuildResponse response = this.createBuildResponse(be);
+    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionName).orElseThrow(NoSuchVersionException::new);
+    final BuildEntity build = this.builds.findByProjectAndVersionAndNumber(project, version, buildId).orElseThrow(NoSuchBuildException::new);
+    final BuildResponse response = this.createBuildResponse(project, version, build);
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_BUILD));
   }
 
@@ -345,22 +345,22 @@ public class Meta3Controller {
   )
   public ResponseEntity<?> getLatestBuild(
     @Parameter(description = "The name of the project")
-    @PathVariable
-    final String project,
+    @PathVariable("project")
+    final String projectName,
     @Parameter(description = "The name of the version")
-    @PathVariable
-    final String version
+    @PathVariable("version")
+    final String versionName
   ) {
-    final ProjectEntity pe = this.projects.findByName(project).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity ve = this.versions.findByProjectAndName(pe, version).orElseThrow(NoSuchVersionException::new);
-    final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(pe, ve)
+    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionName).orElseThrow(NoSuchVersionException::new);
+    final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version)
       .sorted(Build.COMPARATOR_ID_REVERSE)
       .toList();
     if (builds.isEmpty()) {
       throw new NoSuchBuildException();
     } else {
-      final BuildEntity be = builds.getFirst();
-      final BuildResponse response = this.createBuildResponse(be);
+      final BuildEntity build = builds.getFirst();
+      final BuildResponse response = this.createBuildResponse(project, version, build);
       return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_BUILD_LATEST));
     }
   }
@@ -409,12 +409,12 @@ public class Meta3Controller {
     );
   }
 
-  private BuildResponse createBuildResponse(final BuildEntity build) {
+  private BuildResponse createBuildResponse(final Project project, final Version version, final BuildEntity build) {
     final Map<String, DownloadWithUrl> downloads = build.downloads().entrySet()
       .stream()
       .map(entry -> {
         final Download download = entry.getValue();
-        final URI url = this.bucket.getDownloadUrl(build, download);
+        final URI url = this.storage.getDownloadUrl(project, version, build, download);
         final DownloadWithUrl downloadWithUrl = download.withUrl(url);
         return Map.entry(entry.getKey(), downloadWithUrl);
       })

@@ -35,14 +35,14 @@ import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.model.Build;
-import io.papermc.fill.model.BuildPublishListener;
 import io.papermc.fill.model.Commit;
-import io.papermc.fill.model.DiscordNotificationChannel;
 import io.papermc.fill.model.Download;
-import io.papermc.fill.model.GitRepository;
-import io.papermc.fill.service.BucketService;
 import io.papermc.fill.service.DiscordService;
+import io.papermc.fill.service.StorageService;
+import io.papermc.fill.util.BuildPublishListener;
 import io.papermc.fill.util.discord.Components;
+import io.papermc.fill.util.discord.DiscordNotificationChannel;
+import io.papermc.fill.util.git.GitRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -60,19 +60,19 @@ import org.springframework.stereotype.Component;
 public class DiscordNotifier implements BuildPublishListener {
   private final ApplicationDiscordProperties properties;
   private final BuildRepository builds;
-  private final BucketService bucket;
+  private final StorageService storage;
   private final DiscordService discord;
 
   @Autowired
   public DiscordNotifier(
     final ApplicationDiscordProperties properties,
     final BuildRepository builds,
-    final BucketService bucket,
+    final StorageService storage,
     final DiscordService discord
   ) {
     this.properties = properties;
     this.builds = builds;
-    this.bucket = bucket;
+    this.storage = storage;
     this.discord = discord;
   }
 
@@ -148,8 +148,10 @@ public class DiscordNotifier implements BuildPublishListener {
   private ActionRow createButtons(final ProjectEntity project, final VersionEntity version, final GitRepository repository, final BuildEntity build, final boolean includeGitCompare) {
     final List<ActionComponent> row0 = new ArrayList<>();
 
-    final Download download = build.downloads().get(project.discordNotificationDownloadKey());
-    row0.add(Button.link(download.withUrl(this.bucket.getDownloadUrl(build, download)).url().toString(), CustomEmoji.of(this.properties.emojis().download().id(), this.properties.emojis().download().name(), false), "Download"));
+    final Download download = build.getDownloadByKey(project.discordNotificationDownloadKey());
+    if (download != null) {
+      row0.add(Button.link(download.withUrl(this.storage.getDownloadUrl(project, version, build, download)).url().toString(), CustomEmoji.of(this.properties.emojis().download().id(), this.properties.emojis().download().name(), false), "Download"));
+    }
 
     if (includeGitCompare) {
       final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version)

@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.model;
+package io.papermc.fill.exception;
 
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public record DiscordNotificationChannel(
-  long snowflake,
-  boolean includeGitCompare
-) {
+public class CommitOrderValidationException extends AppException {
+  public CommitOrderValidationException(final String message) {
+    super(message);
+  }
 }

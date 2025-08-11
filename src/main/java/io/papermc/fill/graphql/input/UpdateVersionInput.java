@@ -13,27 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.model;
+package io.papermc.fill.graphql.input;
 
-import java.util.Map;
+import io.papermc.fill.model.Support;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public interface BuildWithDownloads<D extends AbstractDownload> extends Build {
-  Map<String, D> downloads();
-
-  default @Nullable D getDownloadByKey(final String key) {
-    return this.downloads().get(key);
-  }
-
-  default @Nullable D getDownloadByName(final String name) {
-    for (final Map.Entry<String, D> entry : this.downloads().entrySet()) {
-      final D download = entry.getValue();
-      if (download.name().equals(name)) {
-        return download;
-      }
-    }
-    return null;
-  }
+public record UpdateVersionInput(
+  String project,
+  String id,
+  @Nullable Support support
+) {
 }

@@ -16,6 +16,7 @@
 package io.papermc.fill.model;
 
 import java.util.Comparator;
+import java.util.function.Predicate;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -27,6 +28,10 @@ public interface Version extends Timestamped {
   String name();
 
   Support support();
+
+  static Predicate<Version> isSupportStatus(final @Nullable SupportStatus status) {
+    return version -> status == null || version.support().status() == status;
+  }
 
   @Nullable Java java();
 }

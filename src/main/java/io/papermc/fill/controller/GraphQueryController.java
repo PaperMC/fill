@@ -30,9 +30,10 @@ import io.papermc.fill.model.Download;
 import io.papermc.fill.model.DownloadWithUrl;
 import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Project;
+import io.papermc.fill.model.Support;
 import io.papermc.fill.model.SupportStatus;
 import io.papermc.fill.model.Version;
-import io.papermc.fill.service.BucketService;
+import io.papermc.fill.service.StorageService;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -55,19 +56,19 @@ public class GraphQueryController {
   private final ProjectRepository projects;
   private final VersionRepository versions;
   private final BuildRepository builds;
-  private final BucketService bucket;
+  private final StorageService storage;
 
   @Autowired
   public GraphQueryController(
     final ProjectRepository projects,
     final VersionRepository versions,
     final BuildRepository builds,
-    final BucketService bucket
+    final StorageService storage
   ) {
     this.projects = projects;
     this.versions = versions;
     this.builds = builds;
-    this.bucket = bucket;
+    this.storage = storage;
   }
 
   @QueryMapping("projects")
@@ -109,9 +110,9 @@ public class GraphQueryController {
     }
     versions = versions.sorted(Version.COMPARATOR_CREATED_AT_REVERSE);
     if (filterBy != null) {
-      final SupportStatus supportStatus = filterBy.supportStatus();
-      if (supportStatus != null) {
-        versions = versions.filter(version -> version.support().status() == supportStatus);
+      final SupportStatus filterBySupportStatus = filterBy.supportStatus();
+      if (filterBySupportStatus != null) {
+        versions = versions.filter(Version.isSupportStatus(filterBySupportStatus));
       }
     }
     return versions.toList();
@@ -134,6 +135,11 @@ public class GraphQueryController {
   @SchemaMapping(typeName = "Version", field = "id")
   public String mapVersionId(final VersionEntity version) {
     return version.name();
+  }
+
+  @SchemaMapping(typeName = "Version", field = "support")
+  public Support mapVersionSupport(final VersionEntity version) {
+    return version.support();
   }
 
   @SchemaMapping(typeName = "Version", field = "java")
@@ -186,7 +192,7 @@ public class GraphQueryController {
   public List<DownloadWithUrl> mapBuildDownloads(final BuildEntity build) {
     return build.downloads().values()
       .stream()
-      .map(value -> value.withUrl(this.bucket.getDownloadUrl(build, value)))
+      .map(value -> value.withUrl(this.storage.getDownloadUrl(build, value)))
       .toList();
   }
 
@@ -196,9 +202,9 @@ public class GraphQueryController {
     @Argument
     final String name
   ) {
-    final Download download = build.downloads().get(name);
+    final Download download = build.getDownloadByKey(name);
     return download != null
-      ? download.withUrl(this.bucket.getDownloadUrl(build, download))
+      ? download.withUrl(this.storage.getDownloadUrl(build, download))
       : null;
   }
 }

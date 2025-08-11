@@ -15,12 +15,13 @@
  */
 package io.papermc.fill.model;
 
-import io.papermc.fill.database.BuildEntity;
-import io.papermc.fill.database.ProjectEntity;
-import io.papermc.fill.database.VersionEntity;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public interface BuildPublishListener {
-  void onBuildPublished(final ProjectEntity project, final VersionEntity version, final BuildEntity build);
+public interface AbstractDownload {
+  String name();
+
+  Checksums checksums();
+
+  int size();
 }

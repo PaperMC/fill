@@ -32,9 +32,11 @@ import io.papermc.fill.exception.VersionAlreadyExistsException;
 import io.papermc.fill.graphql.input.CreateFamilyInput;
 import io.papermc.fill.graphql.input.CreateVersionInput;
 import io.papermc.fill.graphql.input.PromoteBuildInput;
+import io.papermc.fill.graphql.input.UpdateVersionInput;
 import io.papermc.fill.graphql.payload.CreateFamilyPayload;
 import io.papermc.fill.graphql.payload.CreateVersionPayload;
 import io.papermc.fill.graphql.payload.PromoteBuildPayload;
+import io.papermc.fill.graphql.payload.UpdateVersionPayload;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Support;
 import io.papermc.fill.model.SupportStatus;
@@ -112,6 +114,22 @@ public class GraphMutationController {
     return new CreateVersionPayload(entity);
   }
 
+  @MutationMapping("updateVersion")
+  @PreAuthorize("hasRole('API_MANAGE')")
+  public UpdateVersionPayload updateVersion(
+    @Argument
+    final UpdateVersionInput input
+  ) {
+    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(NoSuchProjectException::new);
+    VersionEntity version = this.versions.findByProjectAndName(project, input.id()).orElseThrow(NoSuchVersionException::new);
+    final Support support = input.support();
+    if (support != null) {
+      version.setSupport(support);
+    }
+    version = this.versions.save(version);
+    return new UpdateVersionPayload(version);
+  }
+
   @MutationMapping("promoteBuild")
   @PreAuthorize("hasRole('API_MANAGE')")
   public PromoteBuildPayload promoteBuild(
@@ -125,7 +143,7 @@ public class GraphMutationController {
     build.setChannel(BuildChannel.RECOMMENDED);
     build = this.builds.save(build);
 
-    version.setPromotedBuild(build);
+    version.setMostRecentPromotedBuild(build);
     version = this.versions.save(version);
 
     return new PromoteBuildPayload(version);

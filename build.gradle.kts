@@ -122,6 +122,7 @@ dependencies {
   implementation("com.github.ben-manes.caffeine:caffeine:3.2.2")
   implementation("com.google.guava:guava:33.4.8-jre")
   implementation("com.graphql-java:graphql-java-extended-scalars:24.0")
+  implementation("io.micrometer:micrometer-registry-prometheus")
   implementation("org.apache.commons:commons-text:1.14.0")
   implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -132,7 +133,6 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-validation")
   implementation("org.springframework.boot:spring-boot-starter-web")
   implementation("software.amazon.awssdk:s3:2.32.19")
-  implementation("io.micrometer:micrometer-registry-prometheus")
 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.graphql:spring-graphql-test")

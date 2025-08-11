@@ -16,9 +16,9 @@
 package io.papermc.fill.database;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.papermc.fill.model.DiscordNotificationChannel;
-import io.papermc.fill.model.GitRepository;
 import io.papermc.fill.model.Project;
+import io.papermc.fill.util.discord.DiscordNotificationChannel;
+import io.papermc.fill.util.git.GitRepository;
 import java.net.URI;
 import java.util.List;
 import org.bson.types.ObjectId;

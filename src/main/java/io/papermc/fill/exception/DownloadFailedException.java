@@ -19,7 +19,7 @@ import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public class DownloadFailedException extends AppException {
-  public DownloadFailedException() {
-    super("The download could not be completed.");
+  public DownloadFailedException(final Throwable cause) {
+    super("The download could not be completed.", cause);
   }
 }

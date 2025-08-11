@@ -1,3 +1,4 @@
+scalar Date
 scalar DateTime
 
 type Query {
@@ -19,6 +20,10 @@ type Mutation {
   createVersion(
     input: CreateVersionInput!
   ): CreateVersionPayload
+
+  updateVersion(
+    input: UpdateVersionInput!
+  ): UpdateVersionPayload
 
   promoteBuild(
     input: PromoteBuildInput!
@@ -55,6 +60,8 @@ type Family {
 type Version {
   id: String!
 
+  support: Support!
+
   java: Java!
 
   builds(
@@ -72,6 +79,18 @@ type Version {
 
 input VersionFilters {
   supportStatus: SupportStatus
+}
+
+type Support {
+  status: SupportStatus!
+
+  end: Date
+}
+
+input SupportInput {
+  status: SupportStatus!
+
+  end: Date
 }
 
 enum SupportStatus {
@@ -188,9 +207,24 @@ input CreateVersionInput {
   java: JavaInput
 }
 
+input UpdateVersionInput {
+  project: String!
+
+  id: String!
+
+  support: SupportInput
+}
+
 type CreateVersionPayload {
   """
   The new version.
+  """
+  version: Version
+}
+
+type UpdateVersionPayload {
+  """
+  The version.
   """
   version: Version
 }

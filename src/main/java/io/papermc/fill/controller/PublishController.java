@@ -25,28 +25,33 @@ import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
 import io.papermc.fill.exception.BuildAlreadyExistsException;
-import io.papermc.fill.exception.NoPayloadException;
+import io.papermc.fill.exception.ChecksumMismatchException;
+import io.papermc.fill.exception.InvalidStagingInstanceException;
 import io.papermc.fill.exception.NoSuchDownloadException;
 import io.papermc.fill.exception.NoSuchProjectException;
 import io.papermc.fill.exception.NoSuchVersionException;
 import io.papermc.fill.exception.PublishFailedException;
-import io.papermc.fill.model.BuildPublishListener;
+import io.papermc.fill.model.Checksums;
+import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.request.PublishRequest;
 import io.papermc.fill.model.request.UploadRequest;
 import io.papermc.fill.model.response.PublishResponse;
 import io.papermc.fill.model.response.UploadResponse;
-import io.papermc.fill.service.BucketService;
+import io.papermc.fill.service.StorageService;
+import io.papermc.fill.util.BuildPublishListener;
 import io.papermc.fill.util.http.Responses;
 import io.swagger.v3.oas.annotations.Hidden;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,25 +77,25 @@ public class PublishController {
   private final ProjectRepository projects;
   private final VersionRepository versions;
   private final BuildRepository builds;
-  private final BucketService buckets;
+  private final StorageService storage;
   private final Set<BuildPublishListener> buildPublishListeners;
 
-  private final LoadingCache<UUID, Payload> payloads = Caffeine.newBuilder()
+  private final LoadingCache<UUID, StagingInstance> instances = Caffeine.newBuilder()
     .expireAfterAccess(Duration.ofMinutes(5))
-    .build(_ -> new Payload());
+    .build(_ -> new StagingInstance());
 
   @Autowired
   public PublishController(
     final ProjectRepository projects,
     final VersionRepository versions,
     final BuildRepository builds,
-    final BucketService buckets,
+    final StorageService storage,
     final Set<BuildPublishListener> buildPublishListeners
   ) {
     this.projects = projects;
     this.versions = versions;
     this.builds = builds;
-    this.buckets = buckets;
+    this.storage = storage;
     this.buildPublishListeners = buildPublishListeners;
   }
 
@@ -106,16 +111,16 @@ public class PublishController {
     @RequestParam
     final MultipartFile file
   ) {
-    final Payload payload = this.payloads.get(request.id());
+    final StagingInstance instance = this.instances.get(request.id());
     try {
-      final String fileName = file.getOriginalFilename();
-      if (fileName == null || fileName.isBlank()) {
-        LOGGER.error("Failed to publish: payload has no file name");
-        throw new PublishFailedException(new IllegalArgumentException("Missing file name"));
+      final String filename = file.getOriginalFilename();
+      if (filename == null || filename.isBlank()) {
+        final String message = "Missing filename";
+        throw createPublishFailedException(request, message, new IllegalArgumentException(message));
       }
-      payload.downloads.put(fileName, file.getBytes());
+      instance.addStagedFile(filename, file.getBytes());
     } catch (final IOException e) {
-      throw new PublishFailedException(e);
+      throw createPublishFailedException(request, "i/o exception", e);
     }
 
     return Responses.ok(new UploadResponse(true));
@@ -131,21 +136,24 @@ public class PublishController {
     @RequestBody
     final PublishRequest request
   ) {
-    final Payload payload = this.payloads.getIfPresent(request.id());
-    if (payload == null) {
-      throw new PublishFailedException(new NoPayloadException());
+    final StagingInstance instance = this.instances.getIfPresent(request.id());
+    if (instance == null) {
+      throw createPublishFailedException(request, "Invalid staging instance", new InvalidStagingInstanceException());
     } else {
-      this.payloads.invalidate(request.id());
+      this.instances.invalidate(request.id());
     }
 
     final ProjectEntity project = this.projects.findByName(request.project()).orElseThrow(NoSuchProjectException::new);
     final VersionEntity version = this.versions.findByProjectAndName(project, request.version()).orElseThrow(NoSuchVersionException::new);
 
     if (this.builds.findByProjectAndVersionAndNumber(project, version, request.build()).isPresent()) {
-      throw new BuildAlreadyExistsException();
+      throw createPublishFailedException(request, "Build already exists", new BuildAlreadyExistsException());
     }
 
+    final List<Commit> commits = request.commits().reversed();
     final Map<String, Download> downloads = request.downloads();
+
+    Commit.checkOrder(commits);
 
     final BuildEntity build = BuildEntity.create(
       new ObjectId(),
@@ -154,33 +162,35 @@ public class PublishController {
       version,
       request.build(),
       request.channel(),
-      request.commits().reversed(),
-      request.downloads()
+      commits,
+      downloads
     );
 
     for (final Map.Entry<String, Download> entry : downloads.entrySet()) {
       final Download download = entry.getValue();
-      final byte[] bytes = payload.downloads.remove(download.name());
+      final byte[] bytes = instance.removeStagedFile(download.name());
       if (bytes == null) {
-        LOGGER.error("Failed to publish: download {} has no associated file", download.name());
-        throw new PublishFailedException(new NoSuchDownloadException());
+        throw createPublishFailedException(request, String.format("Download %s has no associated file", download.name()), new NoSuchDownloadException());
       }
-      final String sha256 = Hashing.sha256().hashBytes(bytes).toString();
-      if (!download.checksums().sha256().equals(sha256)) {
-        LOGGER.error("Failed to publish: download {} has a mis-matching sha256 checksum (expected {}, got {})", download.name(), download.checksums().sha256(), sha256);
-        throw new PublishFailedException(new NoSuchDownloadException());
+      final Checksums checksums = createChecksums(bytes);
+      if (!download.checksums().equals(checksums)) {
+        final String message = String.format(
+          "Download %s has mis-matching checksums (expected %s, got %s)",
+          download.name(),
+          download.checksums(),
+          checksums
+        );
+        throw createPublishFailedException(request, message, new ChecksumMismatchException(message));
       }
       try {
-        this.buckets.putObject(build, download, bytes);
+        this.storage.putObject(project, version, build, download, bytes, checksums);
       } catch (final SdkException e) {
-        LOGGER.error("Failed to publish: could not put object into bucket for {}", download.name(), e);
-        throw new PublishFailedException(e);
+        throw createPublishFailedException(request, String.format("Could not put object into bucket for %s", download.name()), e);
       }
     }
 
-    if (!payload.downloads.isEmpty()) {
-      LOGGER.error("Failed to publish: additional files ({}) were provided that have no defined downloads", String.join(", ", payload.downloads.keySet()));
-      throw new PublishFailedException(new NoSuchDownloadException());
+    if (!instance.hasAnyStagedFiles()) {
+      throw createPublishFailedException(request, String.format("Additional files (%s) were provided that have no defined downloads", String.join(", ", instance.files.keySet())), new NoSuchDownloadException());
     }
 
     this.builds.save(build);
@@ -192,8 +202,31 @@ public class PublishController {
     return Responses.created(new PublishResponse(true, build._id()));
   }
 
+  private static Checksums createChecksums(final byte[] bytes) {
+    return new Checksums(
+      Hashing.sha256().hashBytes(bytes).toString()
+    );
+  }
+
+  private static PublishFailedException createPublishFailedException(final Object request, final String message, final Throwable throwable) {
+    LOGGER.error("Failed to publish [{}]: {}", request, message, throwable);
+    return new PublishFailedException("Publishing the build failed: " + message, throwable);
+  }
+
   @NullMarked
-  static class Payload {
-    final Map<String, byte[]> downloads = new HashMap<>();
+  static final class StagingInstance {
+    private final Map<String, byte[]> files = new HashMap<>();
+
+    public boolean hasAnyStagedFiles() {
+      return !this.files.isEmpty();
+    }
+
+    public byte @Nullable [] removeStagedFile(final String name) {
+      return this.files.get(name);
+    }
+
+    public void addStagedFile(final String name, final byte[] bytes) {
+      this.files.put(name, bytes);
+    }
   }
 }

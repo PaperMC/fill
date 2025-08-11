@@ -66,4 +66,8 @@ public class FamilyEntity extends AbstractEntity implements Family {
   public Java java() {
     return this.java;
   }
+
+  public void setJava(final Java java) {
+    this.java = java;
+  }
 }

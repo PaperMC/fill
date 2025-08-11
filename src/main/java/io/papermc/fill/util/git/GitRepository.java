@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.exception;
+package io.papermc.fill.util.git;
 
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class NoPayloadException extends AppException {
-  public NoPayloadException() {
-    super("No payloads were provided before publishing.");
-  }
+public record GitRepository(
+  String owner,
+  String name
+) {
 }

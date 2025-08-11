@@ -20,6 +20,6 @@ import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public record CreateFamilyPayload(
-  FamilyEntity version
+  FamilyEntity family
 ) {
 }

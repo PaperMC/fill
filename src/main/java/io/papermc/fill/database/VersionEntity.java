@@ -15,10 +15,10 @@
  */
 package io.papermc.fill.database;
 
-import io.papermc.fill.model.GitRepository;
 import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Support;
 import io.papermc.fill.model.Version;
+import io.papermc.fill.util.git.GitRepository;
 import java.time.Instant;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
@@ -41,8 +41,9 @@ public class VersionEntity extends AbstractEntity implements Version {
   private @Nullable GitRepository gitRepository;
   private Support support;
   private @Nullable Java java;
+  @Deprecated
   @DocumentReference
-  private @Nullable BuildEntity promotedBuild;
+  private @Nullable BuildEntity mostRecentPromotedBuild;
 
   public VersionEntity() {
   }
@@ -91,16 +92,26 @@ public class VersionEntity extends AbstractEntity implements Version {
     return this.support;
   }
 
+  public void setSupport(final Support support) {
+    this.support = support;
+  }
+
   @Override
   public @Nullable Java java() {
     return this.java;
   }
 
-  public @Nullable BuildEntity promotedBuild() {
-    return this.promotedBuild;
+  public void setJava(final @Nullable Java java) {
+    this.java = java;
   }
 
-  public void setPromotedBuild(final @Nullable BuildEntity promotedBuild) {
-    this.promotedBuild = promotedBuild;
+  @Deprecated
+  public @Nullable BuildEntity mostRecentPromotedBuild() {
+    return this.mostRecentPromotedBuild;
+  }
+
+  @Deprecated
+  public void setMostRecentPromotedBuild(final @Nullable BuildEntity mostRecentPromotedBuild) {
+    this.mostRecentPromotedBuild = mostRecentPromotedBuild;
   }
 }
