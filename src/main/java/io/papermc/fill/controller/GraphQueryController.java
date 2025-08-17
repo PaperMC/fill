@@ -109,7 +109,7 @@ public class GraphQueryController {
       }
     }
     if (last != null) {
-      versions = versions.limit(1);
+      versions = versions.limit(last);
     }
     return versions.toList();
   }
