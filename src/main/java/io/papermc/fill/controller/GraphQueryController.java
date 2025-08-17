@@ -100,20 +100,16 @@ public class GraphQueryController {
     @Argument
     final @Nullable Integer last
   ) {
-    Stream<VersionEntity> versions;
-    if (last != null) {
-      versions = this.versions.findAllByProject(project, PageRequest.of(0, last, Sort.by(Sort.Direction.DESC, "_id")))
-        .getContent()
-        .stream();
-    } else {
-      versions = this.versions.findAllByProject(project);
-    }
+    Stream<VersionEntity> versions = this.versions.findAllByProject(project);
     versions = versions.sorted(Version.COMPARATOR_CREATED_AT_REVERSE);
     if (filterBy != null) {
       final SupportStatus filterBySupportStatus = filterBy.supportStatus();
       if (filterBySupportStatus != null) {
         versions = versions.filter(Version.isSupportStatus(filterBySupportStatus));
       }
+    }
+    if (last != null) {
+      versions = versions.limit(1);
     }
     return versions.toList();
   }
