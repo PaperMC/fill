@@ -26,6 +26,7 @@ import discord4j.core.object.component.TextDisplay;
 import discord4j.core.object.component.Thumbnail;
 import discord4j.core.object.component.UnfurledMediaItem;
 import discord4j.core.object.emoji.CustomEmoji;
+import discord4j.core.object.emoji.Emoji;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.util.AllowedMentions;
@@ -43,6 +44,7 @@ import io.papermc.fill.util.BuildPublishListener;
 import io.papermc.fill.util.discord.Components;
 import io.papermc.fill.util.discord.DiscordNotificationChannel;
 import io.papermc.fill.util.git.GitRepository;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -150,7 +152,8 @@ public class DiscordNotifier implements BuildPublishListener {
 
     final Download download = build.getDownloadByKey(project.discordNotificationDownloadKey());
     if (download != null) {
-      row0.add(Button.link(download.withUrl(this.storage.getDownloadUrl(project, version, build, download)).url().toString(), CustomEmoji.of(this.properties.emojis().download().id(), this.properties.emojis().download().name(), false), "Download"));
+      final URI url = this.storage.getDownloadUrl(project, version, build, download);
+      row0.add(Button.link(url.toString(), createEmoji(this.properties.emojis().download()), "Download"));
     }
 
     if (includeGitCompare) {
@@ -159,13 +162,14 @@ public class DiscordNotifier implements BuildPublishListener {
         .toList();
       final BuildEntity buildBefore = getBuildBefore(builds);
       if (buildBefore != null) {
-        row0.add(Button.link(String.format(
+        final String url = String.format(
           "https://diffs.dev/?github_url=https://github.com/%s/%s/compare/%s..%s",
           repository.owner(),
           repository.name(),
           buildBefore.commits().getFirst().sha(),
           build.commits().getFirst().sha()
-        ), CustomEmoji.of(this.properties.emojis().gitCompare().id(), this.properties.emojis().gitCompare().name(), false), "GitHub Diff"));
+        );
+        row0.add(Button.link(url, createEmoji(this.properties.emojis().gitCompare()), "GitHub Diff"));
       }
     }
 
@@ -175,5 +179,9 @@ public class DiscordNotifier implements BuildPublishListener {
   // TODO: improve this logic
   private static @Nullable BuildEntity getBuildBefore(final List<BuildEntity> builds) {
     return builds.size() >= 2 ? builds.get(builds.size() - 2) : null;
+  }
+
+  private static Emoji createEmoji(final ApplicationDiscordProperties.Emojis.Emoji emoji) {
+    return CustomEmoji.of(emoji.id(), emoji.name(), false);
   }
 }

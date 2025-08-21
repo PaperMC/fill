@@ -21,10 +21,12 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
+import io.papermc.fill.exception.DownloadFailedException;
 import io.papermc.fill.exception.NoSuchBuildException;
 import io.papermc.fill.exception.NoSuchDownloadException;
 import io.papermc.fill.exception.NoSuchProjectException;
 import io.papermc.fill.exception.NoSuchVersionException;
+import io.papermc.fill.exception.StorageReadException;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.http.Caching;
@@ -85,10 +87,15 @@ public class Data2Controller {
 
     final Download download = build.getDownloadByName(downloadName);
     if (download != null) {
-      final StorageService.Asset asset = this.storage.getAsset(project, version, build, download);
-      if (asset != null) {
-        return Responses.ok(new ByteArrayResource(asset.content()), headers -> {
-          headers.putAll(asset.headers());
+      final StorageService.Asset object;
+      try {
+        object = this.storage.getObject(project, version, build, download);
+      } catch (final StorageReadException e) {
+        throw new DownloadFailedException(e);
+      }
+      if (object != null) {
+        return Responses.ok(new ByteArrayResource(object.content()), headers -> {
+          headers.putAll(object.headers());
           if (!headers.containsKey(HttpHeaders.CACHE_CONTROL)) {
             headers.setCacheControl(Caching.publicShared(CACHE_LENGTH_DOWNLOAD));
           }

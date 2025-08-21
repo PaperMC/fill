@@ -16,7 +16,8 @@
 package io.papermc.fill.service;
 
 import io.papermc.fill.configuration.properties.ApplicationApiProperties;
-import io.papermc.fill.exception.DownloadFailedException;
+import io.papermc.fill.exception.StorageReadException;
+import io.papermc.fill.exception.StorageWriteException;
 import io.papermc.fill.model.Build;
 import io.papermc.fill.model.Checksums;
 import io.papermc.fill.model.Download;
@@ -24,7 +25,6 @@ import io.papermc.fill.model.Project;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.s3.S3Configuration;
 import io.papermc.fill.util.http.Headers;
-import io.papermc.fill.util.http.MediaTypes;
 import java.io.IOException;
 import java.net.URI;
 import java.util.NoSuchElementException;
@@ -34,11 +34,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -81,39 +83,50 @@ public class StorageServiceImpl implements StorageService {
     final Build build,
     final Download download,
     final byte[] content,
+    final MediaType type,
     final Checksums checksums
-  ) {
+  ) throws StorageWriteException {
     final ApplicationApiProperties.Storage properties = this.properties.storage();
+    final String path = StorageService.createPath(properties.path(), project, version, build, download);
     final PutObjectRequest.Builder request = PutObjectRequest.builder()
       .bucket(properties.s3().bucket())
-      .key(StorageService.createPath(properties.path(), project, version, build, download))
+      .key(path)
       .contentLength((long) content.length)
-      .contentType(MediaTypes.APPLICATION_JAVA_ARCHIVE_VALUE);
-    this.s3.putObject(request.build(), RequestBody.fromBytes(content));
+      .contentType(type.toString());
+    try {
+      this.s3.putObject(request.build(), RequestBody.fromBytes(content));
+    } catch (final SdkException e) {
+      throw createStorageWriteException(download, path, "s3 exception", e);
+    }
   }
 
   @Deprecated
   @Override
-  public @Nullable Asset getAsset(
+  public @Nullable Asset getObject(
     final Project project,
     final Version version,
     final Build build,
     final Download download
-  ) {
+  ) throws StorageReadException {
     final ApplicationApiProperties.Storage properties = this.properties.storage();
     return switch (properties.legacyRetrievalStrategy()) {
       case BUCKET -> {
         final String path = StorageService.createPath(properties.path(), project, version, build, download);
+        final GetObjectRequest request = GetObjectRequest.builder()
+          .bucket(properties.s3().bucket())
+          .key(path)
+          .build();
+        final ResponseInputStream<GetObjectResponse> response;
         try {
-          final GetObjectRequest request = GetObjectRequest.builder()
-            .bucket(properties.s3().bucket())
-            .key(path)
-            .build();
-          final ResponseInputStream<GetObjectResponse> response = this.s3.getObject(request);
-          LOGGER.debug("Retrieved asset {} from bucket", download);
+          response = this.s3.getObject(request);
+        } catch (final S3Exception e) {
+          throw createStorageReadException(download, path, "s3 exception", e);
+        }
+        LOGGER.debug("Retrieved object {} from bucket", download);
+        try {
           yield new Asset(response.readAllBytes(), HttpHeaders.EMPTY);
-        } catch (final IOException | S3Exception e) {
-          throw createDownloadFailedException(download, path, "s3 exception", e);
+        } catch (final IOException e) {
+          throw createStorageReadException(download, path, "i/o exception", e);
         }
       }
       case HTTP -> {
@@ -127,25 +140,32 @@ public class StorageServiceImpl implements StorageService {
           if (response.getStatusCode().is2xxSuccessful()) {
             final byte[] content = response.getBody();
             if (content != null) {
-              LOGGER.info("Retrieved asset [{}] from bucket [{}]", download, uri);
+              LOGGER.info("Retrieved object [{}] from bucket [{}]", download, uri);
               final HttpHeaders oldHeaders = response.getHeaders();
               final HttpHeaders newHeaders = Headers.copySharedHeaders(oldHeaders);
               yield new Asset(content, newHeaders);
             } else {
-              throw createDownloadFailedException(download, uri, "no content", new NoSuchElementException());
+              throw createStorageReadException(download, uri, "no content", new NoSuchElementException());
             }
           } else {
-            throw createDownloadFailedException(download, uri, String.format("non-2xx response [%s]", response.getStatusCode()), new NoSuchElementException());
+            throw createStorageReadException(download, uri, String.format("non-2xx response [%s]", response.getStatusCode()), new NoSuchElementException());
           }
         } catch (final HttpClientErrorException e) {
-          throw createDownloadFailedException(download, uri, "http exception", e);
+          throw createStorageReadException(download, uri, "http exception", e);
         }
       }
     };
   }
 
-  private static DownloadFailedException createDownloadFailedException(final Download download, final Object path, final String message, final Throwable throwable) {
-    LOGGER.error("Failed to retrieve asset [{}] from bucket [{}]: {}", download, path, message, throwable);
-    return new DownloadFailedException(throwable);
+  private static StorageReadException createStorageReadException(final Download download, final Object path, final String reason, final Throwable throwable) {
+    final String message = String.format("Failed to read object [%s] from storage [%s]: %s", download, path, reason);
+    LOGGER.error(message, throwable);
+    return new StorageReadException(message, throwable);
+  }
+
+  private static StorageWriteException createStorageWriteException(final Download download, final Object path, final String reason, final Throwable throwable) {
+    final String message = String.format("Failed to write object [%s] to storage [%s]: %s", download, path, reason);
+    LOGGER.error(message, throwable);
+    return new StorageWriteException(message, throwable);
   }
 }

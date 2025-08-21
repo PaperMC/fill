@@ -31,6 +31,7 @@ import io.papermc.fill.exception.NoSuchDownloadException;
 import io.papermc.fill.exception.NoSuchProjectException;
 import io.papermc.fill.exception.NoSuchVersionException;
 import io.papermc.fill.exception.PublishFailedException;
+import io.papermc.fill.exception.StorageWriteException;
 import io.papermc.fill.model.Checksums;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
@@ -40,6 +41,7 @@ import io.papermc.fill.model.response.PublishResponse;
 import io.papermc.fill.model.response.UploadResponse;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.BuildPublishListener;
+import io.papermc.fill.util.http.MediaTypes;
 import io.papermc.fill.util.http.Responses;
 import io.swagger.v3.oas.annotations.Hidden;
 import java.io.IOException;
@@ -66,7 +68,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.core.exception.SdkException;
 
 @Hidden
 @NullMarked
@@ -183,8 +184,8 @@ public class PublishController {
         throw createPublishFailedException(request, message, new ChecksumMismatchException(message));
       }
       try {
-        this.storage.putObject(project, version, build, download, bytes, checksums);
-      } catch (final SdkException e) {
+        this.storage.putObject(project, version, build, download, bytes, MediaTypes.APPLICATION_JAVA_ARCHIVE, checksums);
+      } catch (final StorageWriteException e) {
         throw createPublishFailedException(request, String.format("Could not put object into bucket for %s", download.name()), e);
       }
     }

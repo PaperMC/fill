@@ -17,6 +17,8 @@ package io.papermc.fill.service;
 
 import io.papermc.fill.configuration.properties.ApplicationApiProperties;
 import io.papermc.fill.database.BuildEntity;
+import io.papermc.fill.exception.StorageReadException;
+import io.papermc.fill.exception.StorageWriteException;
 import io.papermc.fill.model.Build;
 import io.papermc.fill.model.Checksums;
 import io.papermc.fill.model.Download;
@@ -28,6 +30,7 @@ import org.apache.commons.text.StringSubstitutor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 @NullMarked
 public interface StorageService {
@@ -87,16 +90,17 @@ public interface StorageService {
     final Build build,
     final Download download,
     final byte[] content,
+    final MediaType type,
     final Checksums checksums
-  );
+  ) throws StorageWriteException;
 
   @Deprecated
-  @Nullable Asset getAsset(
+  @Nullable Asset getObject(
     final Project project,
     final Version version,
     final Build build,
     final Download download
-  );
+  ) throws StorageReadException;
 
   @Deprecated
   @NullMarked
