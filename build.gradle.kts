@@ -102,7 +102,7 @@ tasks {
 
 repositories {
   mavenCentral()
-  maven("https://oss.sonatype.org/content/repositories/snapshots/") {
+  maven("https://central.sonatype.com/repository/maven-snapshots/") {
     content {
       includeGroup("com.discord4j")
     }
@@ -116,15 +116,15 @@ dependencies {
 
   developmentOnly("org.springframework.boot:spring-boot-devtools")
 
-  implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.14.0")
-  implementation("com.bucket4j:bucket4j_jdk17-core:8.14.0")
-  implementation("com.discord4j:discord4j-core:3.3.0-RC2")
+  implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.15.0")
+  implementation("com.bucket4j:bucket4j_jdk17-core:8.15.0")
+  implementation("com.discord4j:discord4j-core:3.3.0-RC3")
   implementation("com.github.ben-manes.caffeine:caffeine:3.2.2")
   implementation("com.google.guava:guava:33.4.8-jre")
   implementation("com.graphql-java:graphql-java-extended-scalars:24.0")
   implementation("io.micrometer:micrometer-registry-prometheus")
   implementation("org.apache.commons:commons-text:1.14.0")
-  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
+  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
   implementation("org.springframework.boot:spring-boot-starter-graphql")
@@ -132,7 +132,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-validation")
   implementation("org.springframework.boot:spring-boot-starter-web")
-  implementation("software.amazon.awssdk:s3:2.32.25")
+  implementation("software.amazon.awssdk:s3:2.33.9")
 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.graphql:spring-graphql-test")
