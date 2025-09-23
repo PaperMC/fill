@@ -27,6 +27,7 @@ import io.papermc.fill.exception.NoSuchProjectException;
 import io.papermc.fill.exception.NoSuchVersionException;
 import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
+import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.DownloadWithUrl;
 import io.papermc.fill.model.Family;
@@ -85,6 +86,7 @@ public class Meta3Controller {
   private final ProjectRepository projects;
   private final VersionRepository versions;
   private final BuildRepository builds;
+
   private final StorageService storage;
 
   @Autowired
@@ -124,7 +126,7 @@ public class Meta3Controller {
   public ResponseEntity<?> getProjects() {
     final List<ProjectEntity> projects = this.projects.findAll()
       .stream()
-      .sorted(Project.COMPARATOR_NAME)
+      .sorted(Project.COMPARATOR_ID)
       .toList();
     final ProjectsResponse response = new ProjectsResponse(
       Lists.transform(projects, this::createProjectResponse)
@@ -154,11 +156,11 @@ public class Meta3Controller {
     summary = "Get details of a specific project"
   )
   public ResponseEntity<?> getProject(
-    @Parameter(description = "The name of the project")
+    @Parameter(description = "The id of the project")
     @PathVariable("project")
-    final String projectName
+    final String projectId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
     final ProjectResponse response = this.createProjectResponse(project);
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_PROJECT));
   }
@@ -187,11 +189,11 @@ public class Meta3Controller {
     summary = "Get a list of versions for a specific project"
   )
   public ResponseEntity<?> getVersions(
-    @Parameter(description = "The name of the project")
+    @Parameter(description = "The id of the project")
     @PathVariable("project")
-    final String projectName
+    final String projectId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
     final List<VersionEntity> versions = this.versions.findAllByProject(project)
       .sorted(Version.COMPARATOR_CREATED_AT_REVERSE)
       .toList();
@@ -223,15 +225,15 @@ public class Meta3Controller {
     summary = "Get details of a specific version for a project"
   )
   public ResponseEntity<?> getVersion(
-    @Parameter(description = "The name of the project")
+    @Parameter(description = "The id of the project")
     @PathVariable("project")
-    final String projectName,
-    @Parameter(description = "The name of the version")
+    final String projectId,
+    @Parameter(description = "The id of the version")
     @PathVariable("version")
-    final String versionName
+    final String versionId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionName).orElseThrow(NoSuchVersionException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
     final VersionResponse response = this.createVersionResponse(version);
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_VERSION));
   }
@@ -260,19 +262,19 @@ public class Meta3Controller {
     summary = "Get a list of builds for a specific version of a project"
   )
   public ResponseEntity<?> getBuilds(
-    @Parameter(description = "The name of the project")
+    @Parameter(description = "The id of the project")
     @PathVariable("project")
-    final String projectName,
-    @Parameter(description = "The name of the version")
+    final String projectId,
+    @Parameter(description = "The id of the version")
     @PathVariable("version")
-    final String versionName,
+    final String versionId,
     @Parameter(in = ParameterIn.QUERY, description = "Filter builds by channel")
     @RequestParam(name = "channel", required = false)
     final @Nullable BuildChannel filterByChannel
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionName).orElseThrow(NoSuchVersionException::new);
-    final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version)
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
+    final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .filter(Build.isChannel(filterByChannel))
       .sorted(Build.COMPARATOR_ID_REVERSE)
       .toList();
@@ -304,20 +306,20 @@ public class Meta3Controller {
     summary = "Get details of a specific build for a version of a project"
   )
   public ResponseEntity<?> getBuild(
-    @Parameter(description = "The name of the project")
+    @Parameter(description = "The id of the project")
     @PathVariable("project")
-    final String projectName,
-    @Parameter(description = "The name of the version")
+    final String projectId,
+    @Parameter(description = "The id of the version")
     @PathVariable("version")
-    final String versionName,
-    @Parameter(description = "The name of the build")
+    final String versionId,
+    @Parameter(description = "The id of the build")
     @PathVariable("build")
     @PositiveOrZero
     final int buildId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionName).orElseThrow(NoSuchVersionException::new);
-    final BuildEntity build = this.builds.findByProjectAndVersionAndNumber(project, version, buildId).orElseThrow(NoSuchBuildException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
+    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(NoSuchBuildException::new);
     final BuildResponse response = this.createBuildResponse(project, version, build);
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_BUILD));
   }
@@ -344,16 +346,16 @@ public class Meta3Controller {
     summary = "Get details of the latest build for a version of a project"
   )
   public ResponseEntity<?> getLatestBuild(
-    @Parameter(description = "The name of the project")
+    @Parameter(description = "The id of the project")
     @PathVariable("project")
-    final String projectName,
-    @Parameter(description = "The name of the version")
+    final String projectId,
+    @Parameter(description = "The id of the version")
     @PathVariable("version")
-    final String versionName
+    final String versionId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionName).orElseThrow(NoSuchVersionException::new);
-    final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version)
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
+    final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .sorted(Build.COMPARATOR_ID_REVERSE)
       .toList();
     if (builds.isEmpty()) {
@@ -381,27 +383,27 @@ public class Meta3Controller {
       .entrySet()
       .stream()
       .collect(Collectors.toMap(
-        e -> e.getKey().name(),
-        e -> e.getValue().stream().map(VersionEntity::name).toList(),
+        e -> e.getKey().id(),
+        e -> e.getValue().stream().map(VersionEntity::id).toList(),
         (a, b) -> b,
         LinkedHashMap::new
       ));
     return new ProjectResponse(
       new ProjectResponse.Project(
-        project.name(),
-        project.displayName()
+        project.id(),
+        project.name()
       ),
       versions
     );
   }
 
   private VersionResponse createVersionResponse(final VersionEntity version) {
-    final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(version.project(), version)
+    final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .sorted(Build.COMPARATOR_ID_REVERSE)
       .toList();
     return new VersionResponse(
       new VersionResponse.Version(
-        version.name(),
+        version.id(),
         version.support(),
         Objects.requireNonNullElse(version.java(), version.family().java())
       ),
@@ -409,7 +411,7 @@ public class Meta3Controller {
     );
   }
 
-  private BuildResponse createBuildResponse(final Project project, final Version version, final BuildEntity build) {
+  private BuildResponse createBuildResponse(final Project project, final Version version, final BuildWithDownloads<Download> build) {
     final Map<String, DownloadWithUrl> downloads = build.downloads().entrySet()
       .stream()
       .map(entry -> {

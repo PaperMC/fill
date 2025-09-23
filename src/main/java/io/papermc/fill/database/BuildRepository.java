@@ -20,32 +20,17 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 @NullMarked
 @Repository
 public interface BuildRepository extends MongoRepository<BuildEntity, ObjectId> {
-  Stream<BuildEntity> findAllByProjectAndVersion(
-    final ProjectEntity project,
-    final VersionEntity version
-  );
+  Stream<BuildEntity> findAllByVersion(final VersionEntity version);
 
-  Page<BuildEntity> findAllByProjectAndVersion(
-    final ProjectEntity project,
-    final VersionEntity version,
-    final Pageable pageable
-  );
+  Stream<BuildEntity> findAllByVersionIn(final Collection<VersionEntity> version);
 
-  Stream<BuildEntity> findAllByProjectAndVersionIn(
-    final ProjectEntity project,
-    final Collection<VersionEntity> version
-  );
-
-  Optional<BuildEntity> findByProjectAndVersionAndNumber(
-    final ProjectEntity project,
+  Optional<BuildEntity> findByVersionAndNumber(
     final VersionEntity version,
     final int number
   );

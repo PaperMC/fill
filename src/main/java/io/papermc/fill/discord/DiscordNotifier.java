@@ -16,8 +16,6 @@
 package io.papermc.fill.discord;
 
 import discord4j.common.util.TimestampFormat;
-import discord4j.core.object.component.ActionComponent;
-import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.component.Container;
 import discord4j.core.object.component.Section;
@@ -36,8 +34,10 @@ import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.model.Build;
+import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
+import io.papermc.fill.model.Version;
 import io.papermc.fill.service.DiscordService;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.BuildPublishListener;
@@ -45,8 +45,8 @@ import io.papermc.fill.util.discord.Components;
 import io.papermc.fill.util.discord.DiscordNotificationChannel;
 import io.papermc.fill.util.git.GitRepository;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
@@ -61,7 +61,9 @@ import org.springframework.stereotype.Component;
 @NullMarked
 public class DiscordNotifier implements BuildPublishListener {
   private final ApplicationDiscordProperties properties;
+
   private final BuildRepository builds;
+
   private final StorageService storage;
   private final DiscordService discord;
 
@@ -79,23 +81,31 @@ public class DiscordNotifier implements BuildPublishListener {
   }
 
   @Override
-  public void onBuildPublished(final ProjectEntity project, final VersionEntity version, final BuildEntity build) {
+  public void onBuildPublished(final ProjectEntity project, final VersionEntity version, final BuildWithDownloads<Download> build) {
     final GitRepository repository = Objects.requireNonNullElse(version.gitRepository(), project.gitRepository());
-
     final Container content = this.createContent(project, version, repository, build);
+    final Button downloadButton = this.createDownloadButton(project, version, build);
+    final Button diffButton = this.createDiffButton(version, repository, build);
 
     for (final DiscordNotificationChannel channel : project.discordNotificationChannels()) {
       final MessageCreateSpec message = MessageCreateSpec.builder()
         .addFlag(Message.Flag.IS_COMPONENTS_V2)
         .addComponent(content)
-        .addComponent(this.createButtons(project, version, repository, build, channel.includeGitCompare()))
+        .addComponent(Components.row(OptionalInt.empty(), row -> {
+          if (downloadButton != null) {
+            row.add(downloadButton);
+          }
+          if (diffButton != null && channel.includeGitCompare()) {
+            row.add(diffButton);
+          }
+        }))
         .allowedMentions(AllowedMentions.suppressEveryone())
         .build();
       this.discord.createMessage(channel.snowflake(), message).subscribe();
     }
   }
 
-  private Container createContent(final ProjectEntity project, final VersionEntity version, final GitRepository repository, final BuildEntity build) {
+  private Container createContent(final ProjectEntity project, final Version version, final GitRepository repository, final BuildWithDownloads<Download> build) {
     return Components.container(OptionalInt.empty(), container -> {
       container.add(
         Section.of(
@@ -104,8 +114,8 @@ public class DiscordNotifier implements BuildPublishListener {
             TextDisplay.of(String.format(
               "# Build %d for %s %s",
               build.id(),
-              project.displayName(),
-              version.name()
+              project.name(),
+              version.id()
             )),
             TextDisplay.of(String.format(
               "**Channel**: %s",
@@ -130,7 +140,8 @@ public class DiscordNotifier implements BuildPublishListener {
           .map(commit -> String.format(
             "- %s: %s",
             String.format(
-              "[%s](https://github.com/%s/%s/commit/%s)",
+              Locale.ROOT,
+              "[%s](https://diffs.dev/?github_url=https://github.com/%s/%s/commit/%s)",
               Commit.getShortSha(commit),
               repository.owner(),
               repository.name(),
@@ -147,37 +158,36 @@ public class DiscordNotifier implements BuildPublishListener {
     }, false);
   }
 
-  private ActionRow createButtons(final ProjectEntity project, final VersionEntity version, final GitRepository repository, final BuildEntity build, final boolean includeGitCompare) {
-    final List<ActionComponent> row0 = new ArrayList<>();
-
+  private @Nullable Button createDownloadButton(final ProjectEntity project, final Version version, final BuildWithDownloads<Download> build) {
     final Download download = build.getDownloadByKey(project.discordNotificationDownloadKey());
     if (download != null) {
       final URI url = this.storage.getDownloadUrl(project, version, build, download);
-      row0.add(Button.link(url.toString(), createEmoji(this.properties.emojis().download()), "Download"));
+      return Button.link(url.toString(), createEmoji(this.properties.emojis().download()), "Download");
     }
+    return null;
+  }
 
-    if (includeGitCompare) {
-      final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version)
-        .sorted(Build.COMPARATOR_ID)
-        .toList();
-      final BuildEntity buildBefore = getBuildBefore(builds);
-      if (buildBefore != null) {
-        final String url = String.format(
-          "https://diffs.dev/?github_url=https://github.com/%s/%s/compare/%s..%s",
-          repository.owner(),
-          repository.name(),
-          buildBefore.commits().getFirst().sha(),
-          build.commits().getFirst().sha()
-        );
-        row0.add(Button.link(url, createEmoji(this.properties.emojis().gitCompare()), "GitHub Diff"));
-      }
+  private @Nullable Button createDiffButton(final VersionEntity version, final GitRepository repository, final BuildWithDownloads<Download> build) {
+    final List<BuildEntity> builds = this.builds.findAllByVersion(version)
+      .sorted(Build.COMPARATOR_ID)
+      .toList();
+    final Build buildBefore = getBuildBefore(builds);
+    if (buildBefore != null && !buildBefore.commits().isEmpty()) {
+      final String url = String.format(
+        Locale.ROOT,
+        "https://diffs.dev/?github_url=https://github.com/%s/%s/compare/%s..%s",
+        repository.owner(),
+        repository.name(),
+        buildBefore.commits().getFirst().sha(),
+        build.commits().getFirst().sha()
+      );
+      return Button.link(url, createEmoji(this.properties.emojis().gitCompare()), "GitHub Diff");
     }
-
-    return ActionRow.of(row0);
+    return null;
   }
 
   // TODO: improve this logic
-  private static @Nullable BuildEntity getBuildBefore(final List<BuildEntity> builds) {
+  private static @Nullable Build getBuildBefore(final List<BuildEntity> builds) {
     return builds.size() >= 2 ? builds.get(builds.size() - 2) : null;
   }
 

@@ -54,6 +54,7 @@ public class Data2Controller {
   private final ProjectRepository projects;
   private final VersionRepository versions;
   private final BuildRepository builds;
+
   private final StorageService storage;
 
   @Autowired
@@ -72,18 +73,18 @@ public class Data2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/versions/{version:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}/builds/{build:\\d+}/downloads/{download:[a-zA-Z0-9._-]+}")
   public ResponseEntity<?> getDownload(
     @PathVariable("project")
-    final String projectName,
+    final String projectId,
     @PathVariable("version")
-    final String versionName,
+    final String versionId,
     @PathVariable("build")
     @PositiveOrZero
     final int buildId,
     @PathVariable("download")
     final String downloadName
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionName).orElseThrow(NoSuchVersionException::new);
-    final BuildEntity build = this.builds.findByProjectAndVersionAndNumber(project, version, buildId).orElseThrow(NoSuchBuildException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
+    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(NoSuchBuildException::new);
 
     final Download download = build.getDownloadByName(downloadName);
     if (download != null) {

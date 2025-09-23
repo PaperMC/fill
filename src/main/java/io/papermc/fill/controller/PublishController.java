@@ -78,7 +78,9 @@ public class PublishController {
   private final ProjectRepository projects;
   private final VersionRepository versions;
   private final BuildRepository builds;
+
   private final StorageService storage;
+
   private final Set<BuildPublishListener> buildPublishListeners;
 
   private final LoadingCache<UUID, StagingInstance> instances = Caffeine.newBuilder()
@@ -147,14 +149,14 @@ public class PublishController {
     final ProjectEntity project = this.projects.findByName(request.project()).orElseThrow(NoSuchProjectException::new);
     final VersionEntity version = this.versions.findByProjectAndName(project, request.version()).orElseThrow(NoSuchVersionException::new);
 
-    if (this.builds.findByProjectAndVersionAndNumber(project, version, request.build()).isPresent()) {
+    if (this.builds.findByVersionAndNumber(version, request.build()).isPresent()) {
       throw createPublishFailedException(request, "Build already exists", new BuildAlreadyExistsException());
     }
 
     final List<Commit> commits = request.commits().reversed();
-    final Map<String, Download> downloads = request.downloads();
-
     Commit.checkOrder(commits);
+
+    final Map<String, Download> downloads = request.downloads();
 
     final BuildEntity build = BuildEntity.create(
       new ObjectId(),
@@ -184,7 +186,8 @@ public class PublishController {
         throw createPublishFailedException(request, message, new ChecksumMismatchException(message));
       }
       try {
-        this.storage.putObject(project, version, build, download, bytes, MediaTypes.APPLICATION_JAVA_ARCHIVE, checksums);
+        // TODO: dynamic MediaType
+        this.storage.putObject(project, version, build, download, bytes, MediaTypes.APPLICATION_JAVA_ARCHIVE);
       } catch (final StorageWriteException e) {
         throw createPublishFailedException(request, String.format("Could not put object into bucket for %s", download.name()), e);
       }

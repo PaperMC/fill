@@ -79,7 +79,7 @@ public class VersionEntity extends AbstractEntity implements Version {
   }
 
   @Override
-  public String name() {
+  public String id() {
     return this.name;
   }
 

@@ -19,8 +19,6 @@ import java.util.Comparator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public interface Project {
-  Comparator<Project> COMPARATOR_NAME = Comparator.comparing(Project::name);
-
-  String name();
+public interface Project extends Identified, Named {
+  Comparator<Project> COMPARATOR_ID = Comparator.comparing(Project::id);
 }

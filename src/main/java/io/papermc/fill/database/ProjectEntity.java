@@ -62,11 +62,12 @@ public class ProjectEntity extends AbstractEntity implements Project {
   }
 
   @Override
-  public String name() {
+  public String id() {
     return this.name;
   }
 
-  public String displayName() {
+  @Override
+  public String name() {
     return this.displayName;
   }
 

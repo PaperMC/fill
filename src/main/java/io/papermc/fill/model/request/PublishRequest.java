@@ -52,7 +52,7 @@ public record PublishRequest(
     private final List<Commit> commits = new ArrayList<>();
     private final Map<String, Download> downloads = new HashMap<>();
 
-    public Builder project(final UUID id) {
+    public Builder id(final UUID id) {
       this.id = id;
       return this;
     }

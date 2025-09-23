@@ -18,8 +18,7 @@ package io.papermc.fill.service;
 import io.papermc.fill.configuration.properties.ApplicationApiProperties;
 import io.papermc.fill.exception.StorageReadException;
 import io.papermc.fill.exception.StorageWriteException;
-import io.papermc.fill.model.Build;
-import io.papermc.fill.model.Checksums;
+import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.Project;
 import io.papermc.fill.model.Version;
@@ -70,7 +69,7 @@ public class StorageServiceImpl implements StorageService {
   public URI getDownloadUrl(
     final Project project,
     final Version version,
-    final Build build,
+    final BuildWithDownloads<Download> build,
     final Download download
   ) {
     return StorageService.createUri(this.properties.storage(), project, version, build, download);
@@ -80,11 +79,10 @@ public class StorageServiceImpl implements StorageService {
   public void putObject(
     final Project project,
     final Version version,
-    final Build build,
+    final BuildWithDownloads<Download> build,
     final Download download,
     final byte[] content,
-    final MediaType type,
-    final Checksums checksums
+    final MediaType type
   ) throws StorageWriteException {
     final ApplicationApiProperties.Storage properties = this.properties.storage();
     final String path = StorageService.createPath(properties.path(), project, version, build, download);
@@ -105,7 +103,7 @@ public class StorageServiceImpl implements StorageService {
   public @Nullable Asset getObject(
     final Project project,
     final Version version,
-    final Build build,
+    final BuildWithDownloads<Download> build,
     final Download download
   ) throws StorageReadException {
     final ApplicationApiProperties.Storage properties = this.properties.storage();

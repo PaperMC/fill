@@ -58,7 +58,7 @@ public class FamilyEntity extends AbstractEntity implements Family {
   }
 
   @Override
-  public String name() {
+  public String id() {
     return this.name;
   }
 

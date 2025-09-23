@@ -75,6 +75,7 @@ public class Meta2Controller {
   private static final Duration CACHE_LENGTH_BUILD = Duration.ofDays(7);
 
   private final ApplicationApiProperties properties;
+
   private final ProjectRepository projects;
   private final FamilyRepository families;
   private final VersionRepository versions;
@@ -99,7 +100,7 @@ public class Meta2Controller {
   @GetMapping("/v2/projects")
   public ResponseEntity<?> getProjects() {
     final List<ProjectEntity> projects = this.projects.findAll();
-    final ProjectsResponse response = new ProjectsResponse(projects.stream().map(ProjectEntity::name).toList());
+    final ProjectsResponse response = new ProjectsResponse(projects.stream().map(ProjectEntity::id).toList());
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_PROJECTS));
   }
 
@@ -107,16 +108,16 @@ public class Meta2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}")
   public ResponseEntity<?> getProject(
     @PathVariable("project")
-    final String projectName
+    final String projectId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
     final List<FamilyEntity> families = this.families.findAllByProject(project).toList();
     final List<VersionEntity> versions = this.versions.findAllByProject(project).toList();
     final ProjectResponse response = new ProjectResponse(
+      project.id(),
       project.name(),
-      project.displayName(),
-      families.stream().sorted(Family.COMPARATOR_CREATED_AT).map(FamilyEntity::name).toList(),
-      versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::name).toList()
+      families.stream().sorted(Family.COMPARATOR_CREATED_AT).map(FamilyEntity::id).toList(),
+      versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::id).toList()
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_PROJECT));
   }
@@ -125,18 +126,18 @@ public class Meta2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/version_group/{family:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}")
   public ResponseEntity<?> getFamily(
     @PathVariable("project")
-    final String projectName,
+    final String projectId,
     @PathVariable("family")
-    final String familyName
+    final String familyId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
-    final FamilyEntity family = this.families.findByProjectAndName(project, familyName).orElseThrow(NoSuchVersionException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final FamilyEntity family = this.families.findByProjectAndName(project, familyId).orElseThrow(NoSuchVersionException::new);
     final List<VersionEntity> versions = this.versions.findAllByProjectAndFamily(project, family).toList();
     final FamilyResponse response = new FamilyResponse(
+      project.id(),
       project.name(),
-      project.displayName(),
-      family.name(),
-      versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::name).toList()
+      family.id(),
+      versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::id).toList()
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_FAMILY));
   }
@@ -145,29 +146,29 @@ public class Meta2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/version_group/{family:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}/builds")
   public ResponseEntity<?> getFamilyBuilds(
     @PathVariable("project")
-    final String projectName,
+    final String projectId,
     @PathVariable("family")
-    final String familyName
+    final String familyId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
-    final FamilyEntity family = this.families.findByProjectAndName(project, familyName).orElseThrow(NoSuchFamilyException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final FamilyEntity family = this.families.findByProjectAndName(project, familyId).orElseThrow(NoSuchFamilyException::new);
     final List<VersionEntity> versions = this.versions.findAllByProjectAndFamily(project, family).toList();
-    final List<BuildEntity> builds = this.builds.findAllByProjectAndVersionIn(project, versions)
+    final List<BuildEntity> builds = this.builds.findAllByVersionIn(versions)
       .sorted(Build.COMPARATOR_ID)
       .toList();
     final FamilyBuildsResponse response = new FamilyBuildsResponse(
+      project.id(),
       project.name(),
-      project.displayName(),
-      family.name(),
-      versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::name).toList(),
+      family.id(),
+      versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::id).toList(),
       builds.stream().map(build -> new FamilyBuildsResponse.Build(
-        build.version().name(),
+        build.version().id(),
         build.id(),
         build.createdAt(),
         build.channel(),
         isPromoted(build),
         toChanges(build.commits()),
-        this.toDownloads(project.name(), build.downloads())
+        this.toDownloads(project.id(), build.downloads())
       )).toList()
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_FAMILY_BUILDS));
@@ -177,19 +178,19 @@ public class Meta2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/versions/{version:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}")
   public ResponseEntity<?> getVersion(
     @PathVariable("project")
-    final String projectName,
+    final String projectId,
     @PathVariable("version")
-    final String versionName
+    final String versionId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionName).orElseThrow(NoSuchVersionException::new);
-    final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version)
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
+    final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .sorted(Build.COMPARATOR_ID)
       .toList();
     final VersionResponse response = new VersionResponse(
+      project.id(),
       project.name(),
-      project.displayName(),
-      version.name(),
+      version.id(),
       builds.stream().map(BuildEntity::id).toList()
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_VERSION));
@@ -199,26 +200,26 @@ public class Meta2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/versions/{version:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}/builds")
   public ResponseEntity<?> getVersionBuilds(
     @PathVariable("project")
-    final String projectName,
+    final String projectId,
     @PathVariable("version")
-    final String versionName
+    final String versionId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionName).orElseThrow(NoSuchVersionException::new);
-    final List<BuildEntity> builds = this.builds.findAllByProjectAndVersion(project, version)
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
+    final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .sorted(Build.COMPARATOR_ID)
       .toList();
     final BuildsResponse response = new BuildsResponse(
+      project.id(),
       project.name(),
-      project.displayName(),
-      version.name(),
+      version.id(),
       builds.stream().map(build -> new BuildsResponse.Build(
         build.id(),
         build.createdAt(),
         build.channel(),
         isPromoted(build),
         toChanges(build.commits()),
-        this.toDownloads(project.name(), build.downloads())
+        this.toDownloads(project.id(), build.downloads())
       )).toList()
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_VERSION_BUILDS));
@@ -228,31 +229,31 @@ public class Meta2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/versions/{version:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}/builds/{build:\\d+}")
   public ResponseEntity<?> getVersionBuild(
     @PathVariable("project")
-    final String projectName,
+    final String projectId,
     @PathVariable("version")
-    final String versionName,
+    final String versionId,
     @PathVariable("build")
     @PositiveOrZero
     final int buildId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectName).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionName).orElseThrow(NoSuchVersionException::new);
-    final BuildEntity build = this.builds.findByProjectAndVersionAndNumber(project, version, buildId).orElseThrow(NoSuchBuildException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
+    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(NoSuchBuildException::new);
     final BuildResponse response = new BuildResponse(
+      project.id(),
       project.name(),
-      project.displayName(),
-      version.name(),
+      version.id(),
       build.id(),
       build.createdAt(),
       build.channel(),
       isPromoted(build),
       toChanges(build.commits()),
-      this.toDownloads(project.name(), build.downloads())
+      this.toDownloads(project.id(), build.downloads())
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_BUILD));
   }
 
-  private static boolean isPromoted(final BuildEntity build) {
+  private static boolean isPromoted(final Build build) {
     return build.channel() == BuildChannel.RECOMMENDED;
   }
 

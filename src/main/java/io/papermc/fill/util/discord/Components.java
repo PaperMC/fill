@@ -15,16 +15,17 @@
  */
 package io.papermc.fill.util.discord;
 
+import discord4j.core.object.component.ActionComponent;
+import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Container;
 import discord4j.core.object.component.ICanBeUsedInContainerComponent;
-import discord4j.core.object.component.MessageComponent;
 import discord4j.rest.util.Color;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
 import org.jspecify.annotations.NullMarked;
-import reactor.util.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public final class Components {
@@ -39,11 +40,18 @@ public final class Components {
   private Components() {
   }
 
-  public static <C extends MessageComponent & ICanBeUsedInContainerComponent> Container container(final OptionalInt id, final Consumer<Builder<C>> consumer, final @Nullable Color color, final boolean spoiler) {
-    final List<C> components = createList(consumer);
+  public static Container container(final OptionalInt id, final Consumer<Builder<ICanBeUsedInContainerComponent>> consumer, final @Nullable Color color, final boolean spoiler) {
+    final List<ICanBeUsedInContainerComponent> components = createList(consumer);
     return id.isPresent()
       ? Container.of(id.getAsInt(), color, spoiler, components)
       : Container.of(color, spoiler, components);
+  }
+
+  public static ActionRow row(final OptionalInt id, final Consumer<Builder<ActionComponent>> consumer) {
+    final List<ActionComponent> components = createList(consumer);
+    return id.isPresent()
+      ? ActionRow.of(id.getAsInt(), components)
+      : ActionRow.of(components);
   }
 
   private static <T> List<T> createList(final Consumer<Builder<T>> consumer) {

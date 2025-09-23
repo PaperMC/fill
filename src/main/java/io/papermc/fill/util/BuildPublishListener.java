@@ -15,12 +15,17 @@
  */
 package io.papermc.fill.util;
 
-import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.VersionEntity;
+import io.papermc.fill.model.BuildWithDownloads;
+import io.papermc.fill.model.Download;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public interface BuildPublishListener {
-  void onBuildPublished(final ProjectEntity project, final VersionEntity version, final BuildEntity build);
+  void onBuildPublished(
+    final ProjectEntity project,
+    final VersionEntity version,
+    final BuildWithDownloads<Download> build
+  );
 }

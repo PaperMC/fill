@@ -138,7 +138,7 @@ public class GraphMutationController {
   ) {
     final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(NoSuchProjectException::new);
     VersionEntity version = this.versions.findByProjectAndName(project, input.version()).orElseThrow(NoSuchVersionException::new);
-    BuildEntity build = this.builds.findByProjectAndVersionAndNumber(project, version, input.build()).orElseThrow(NoSuchBuildException::new);
+    BuildEntity build = this.builds.findByVersionAndNumber(version, input.build()).orElseThrow(NoSuchBuildException::new);
 
     build.setChannel(BuildChannel.RECOMMENDED);
     build = this.builds.save(build);

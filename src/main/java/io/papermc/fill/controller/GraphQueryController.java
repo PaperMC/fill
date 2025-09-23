@@ -43,8 +43,6 @@ import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
@@ -56,6 +54,7 @@ public class GraphQueryController {
   private final ProjectRepository projects;
   private final VersionRepository versions;
   private final BuildRepository builds;
+
   private final StorageService storage;
 
   @Autowired
@@ -75,7 +74,7 @@ public class GraphQueryController {
   public List<ProjectEntity> getProjects() {
     return this.projects.findAll()
       .stream()
-      .sorted(Project.COMPARATOR_NAME)
+      .sorted(Project.COMPARATOR_ID)
       .toList();
   }
 
@@ -89,7 +88,7 @@ public class GraphQueryController {
 
   @SchemaMapping(typeName = "Project", field = "id")
   public String mapProjectId(final ProjectEntity project) {
-    return project.name();
+    return project.id();
   }
 
   @SchemaMapping(typeName = "Project", field = "versions")
@@ -125,12 +124,12 @@ public class GraphQueryController {
 
   @SchemaMapping(typeName = "Family", field = "id")
   public String mapFamilyId(final FamilyEntity family) {
-    return family.name();
+    return family.id();
   }
 
   @SchemaMapping(typeName = "Version", field = "id")
   public String mapVersionId(final VersionEntity version) {
-    return version.name();
+    return version.id();
   }
 
   @SchemaMapping(typeName = "Version", field = "support")
@@ -151,20 +150,16 @@ public class GraphQueryController {
     @Argument
     final @Nullable Integer last
   ) {
-    Stream<BuildEntity> builds;
-    if (last != null) {
-      builds = this.builds.findAllByProjectAndVersion(version.project(), version, PageRequest.of(0, last, Sort.by(Sort.Direction.DESC, "_id")))
-        .getContent()
-        .stream();
-    } else {
-      builds = this.builds.findAllByProjectAndVersion(version.project(), version);
-    }
+    Stream<BuildEntity> builds = this.builds.findAllByVersion(version);
     builds = builds.sorted(Build.COMPARATOR_ID_REVERSE);
     if (filterBy != null) {
       final BuildChannel filterByChannel = filterBy.channel();
       if (filterByChannel != null) {
         builds = builds.filter(Build.isChannel(filterByChannel));
       }
+    }
+    if (last != null) {
+      builds = builds.limit(last);
     }
     return builds.toList();
   }

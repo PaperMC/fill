@@ -19,8 +19,7 @@ import io.papermc.fill.configuration.properties.ApplicationApiProperties;
 import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.exception.StorageReadException;
 import io.papermc.fill.exception.StorageWriteException;
-import io.papermc.fill.model.Build;
-import io.papermc.fill.model.Checksums;
+import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.Project;
 import io.papermc.fill.model.Version;
@@ -44,7 +43,7 @@ public interface StorageService {
     final ApplicationApiProperties.Storage configuration,
     final Project project,
     final Version version,
-    final Build build,
+    final BuildWithDownloads<Download> build,
     final Download download
   ) {
     return configuration.url().resolve(createPath(configuration.path(), project, version, build, download));
@@ -54,14 +53,14 @@ public interface StorageService {
     final String template,
     final Project project,
     final Version version,
-    final Build build,
+    final BuildWithDownloads<Download> build,
     final Download download
   ) {
     return StringSubstitutor.replace(
       template,
       Map.of(
-        PROJECT_NAME, project.name(),
-        VERSION_NAME, version.name(),
+        PROJECT_NAME, project.id(),
+        VERSION_NAME, version.id(),
         BUILD_NUMBER, build.id(),
         DOWNLOAD_FILENAME, download.name(),
         DOWNLOAD_SHA256, download.checksums().sha256()
@@ -80,25 +79,24 @@ public interface StorageService {
   URI getDownloadUrl(
     final Project project,
     final Version version,
-    final Build build,
+    final BuildWithDownloads<Download> build,
     final Download download
   );
 
   void putObject(
     final Project project,
     final Version version,
-    final Build build,
+    final BuildWithDownloads<Download> build,
     final Download download,
     final byte[] content,
-    final MediaType type,
-    final Checksums checksums
+    final MediaType type
   ) throws StorageWriteException;
 
   @Deprecated
   @Nullable Asset getObject(
     final Project project,
     final Version version,
-    final Build build,
+    final BuildWithDownloads<Download> build,
     final Download download
   ) throws StorageReadException;
 

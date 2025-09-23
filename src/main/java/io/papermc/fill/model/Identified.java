@@ -15,21 +15,9 @@
  */
 package io.papermc.fill.model;
 
-import java.util.Comparator;
-import java.util.function.Predicate;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public interface Version extends Identified, Timestamped {
-  Comparator<Version> COMPARATOR_CREATED_AT = Comparator.comparing(Version::createdAt);
-  Comparator<Version> COMPARATOR_CREATED_AT_REVERSE = COMPARATOR_CREATED_AT.reversed();
-
-  Support support();
-
-  static Predicate<Version> isSupportStatus(final @Nullable SupportStatus status) {
-    return version -> status == null || version.support().status() == status;
-  }
-
-  @Nullable Java java();
+public interface Identified {
+  String id();
 }

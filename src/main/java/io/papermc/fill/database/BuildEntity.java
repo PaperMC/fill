@@ -32,8 +32,8 @@ import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 @CompoundIndex(def = "{'project': 1}")
-@CompoundIndex(def = "{'project': 1, 'version': 1}")
-@CompoundIndex(def = "{'project': 1, 'version': 1, 'number': 1}", unique = true)
+@CompoundIndex(def = "{'version': 1}")
+@CompoundIndex(def = "{'version': 1, 'number': 1}", unique = true)
 @Document(collection = "builds")
 @NullMarked
 public class BuildEntity extends AbstractEntity implements BuildWithDownloads<Download> {

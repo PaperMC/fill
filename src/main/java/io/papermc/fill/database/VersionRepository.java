@@ -19,8 +19,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -28,11 +26,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface VersionRepository extends MongoRepository<VersionEntity, ObjectId> {
   Stream<VersionEntity> findAllByProject(final ProjectEntity project);
-
-  Page<VersionEntity> findAllByProject(
-    final ProjectEntity project,
-    final Pageable pageable
-  );
 
   Optional<VersionEntity> findByProjectAndName(
     final ProjectEntity project,
