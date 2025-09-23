@@ -172,7 +172,7 @@ public class DiscordNotifier implements BuildPublishListener {
       .sorted(Build.COMPARATOR_ID)
       .toList();
     final Build buildBefore = getBuildBefore(builds);
-    if (buildBefore != null && !buildBefore.commits().isEmpty()) {
+    if (buildBefore != null && !buildBefore.commits().isEmpty() && !build.commits().isEmpty()) {
       final String url = String.format(
         Locale.ROOT,
         "https://diffs.dev/?github_url=https://github.com/%s/%s/compare/%s..%s",
