@@ -7,7 +7,6 @@ buildscript {
 }
 
 plugins {
-  alias(libs.plugins.graalvm.native)
   alias(libs.plugins.gradleGitProperties)
   alias(libs.plugins.indra)
   alias(libs.plugins.indra.checkstyle)
@@ -16,14 +15,6 @@ plugins {
   alias(libs.plugins.spotless)
   alias(libs.plugins.spring.boot)
   alias(libs.plugins.spring.deps)
-}
-
-graalvmNative {
-  binaries {
-    binaries.forEach {
-      it.sharedLibrary = false
-    }
-  }
 }
 
 indra {
@@ -90,16 +81,6 @@ spotless {
   }
 }
 
-tasks {
-  checkstyleAot {
-    isEnabled = false
-  }
-
-  checkstyleAotTest {
-    isEnabled = false
-  }
-}
-
 repositories {
   mavenCentral()
   maven("https://central.sonatype.com/repository/maven-snapshots/") {
@@ -132,7 +113,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-validation")
   implementation("org.springframework.boot:spring-boot-starter-web")
-  implementation("software.amazon.awssdk:s3:2.33.12")
+  implementation("software.amazon.awssdk:s3:2.34.5")
 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.graphql:spring-graphql-test")

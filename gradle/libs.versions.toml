@@ -2,7 +2,6 @@
 indra = "3.2.0"
 
 [plugins]
-graalvm-native = { id = "org.graalvm.buildtools.native", version = "0.11.0" }
 gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version = "2.5.3" }
 indra = { id = "net.kyori.indra", version.ref = "indra" }
 indra-checkstyle = { id = "net.kyori.indra.checkstyle", version.ref = "indra" }
