@@ -1,0 +1,19 @@
+# This GraphQL query retrieves information about the paper project, specifically focusing on its families. For each family, it fetches:
+# - The family id
+# - The minimum required Java version and any recommended Java flags
+query {
+  project(id: "paper") {
+    id
+    families {
+      id
+      java {
+        version {
+          minimum
+        }
+        flags {
+          recommended
+        }
+      }
+    }
+  }
+}

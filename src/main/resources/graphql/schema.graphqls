@@ -33,6 +33,15 @@ type Mutation {
 type Project {
   id: String!
 
+  families: [Family]
+
+  family(
+    """
+    Family id.
+    """
+    id: String!
+  ): Family
+
   versions(
     """
     Filtering options for versions returned from the connection.
@@ -55,10 +64,14 @@ type Project {
 
 type Family {
   id: String!
+
+  java: Java!
 }
 
 type Version {
   id: String!
+
+  family: Family!
 
   support: Support!
 

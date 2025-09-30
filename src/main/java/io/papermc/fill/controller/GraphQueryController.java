@@ -18,6 +18,7 @@ package io.papermc.fill.controller;
 import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.FamilyEntity;
+import io.papermc.fill.database.FamilyRepository;
 import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
@@ -28,6 +29,7 @@ import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.DownloadWithUrl;
+import io.papermc.fill.model.Family;
 import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Project;
 import io.papermc.fill.model.Support;
@@ -52,6 +54,7 @@ import org.springframework.stereotype.Controller;
 @NullMarked
 public class GraphQueryController {
   private final ProjectRepository projects;
+  private final FamilyRepository families;
   private final VersionRepository versions;
   private final BuildRepository builds;
 
@@ -60,11 +63,13 @@ public class GraphQueryController {
   @Autowired
   public GraphQueryController(
     final ProjectRepository projects,
+    final FamilyRepository families,
     final VersionRepository versions,
     final BuildRepository builds,
     final StorageService storage
   ) {
     this.projects = projects;
+    this.families = families;
     this.versions = versions;
     this.builds = builds;
     this.storage = storage;
@@ -89,6 +94,34 @@ public class GraphQueryController {
   @SchemaMapping(typeName = "Project", field = "id")
   public String mapProjectId(final ProjectEntity project) {
     return project.id();
+  }
+
+  @SchemaMapping(typeName = "Project", field = "families")
+  public List<FamilyEntity> mapProjectFamilies(
+    final ProjectEntity project
+  ) {
+    Stream<FamilyEntity> families = this.families.findAllByProject(project);
+    families = families.sorted(Family.COMPARATOR_CREATED_AT_REVERSE);
+    return families.toList();
+  }
+
+  @SchemaMapping(typeName = "Project", field = "family")
+  public @Nullable FamilyEntity mapProjectFamily(
+    final ProjectEntity project,
+    @Argument
+    final String id
+  ) {
+    return this.families.findByProjectAndName(project, id).orElse(null);
+  }
+
+  @SchemaMapping(typeName = "Family", field = "id")
+  public String mapFamilyId(final FamilyEntity family) {
+    return family.id();
+  }
+
+  @SchemaMapping(typeName = "Family", field = "java")
+  public Java mapFamilyJava(final FamilyEntity family) {
+    return family.java();
   }
 
   @SchemaMapping(typeName = "Project", field = "versions")
@@ -122,14 +155,14 @@ public class GraphQueryController {
     return this.versions.findByProjectAndName(project, id).orElse(null);
   }
 
-  @SchemaMapping(typeName = "Family", field = "id")
-  public String mapFamilyId(final FamilyEntity family) {
-    return family.id();
-  }
-
   @SchemaMapping(typeName = "Version", field = "id")
   public String mapVersionId(final VersionEntity version) {
     return version.id();
+  }
+
+  @SchemaMapping(typeName = "Version", field = "family")
+  public FamilyEntity mapVersionFamily(final VersionEntity version) {
+    return version.family();
   }
 
   @SchemaMapping(typeName = "Version", field = "support")
@@ -183,7 +216,7 @@ public class GraphQueryController {
   public List<DownloadWithUrl> mapBuildDownloads(final BuildEntity build) {
     return build.downloads().values()
       .stream()
-      .map(value -> value.withUrl(this.storage.getDownloadUrl(build, value)))
+      .map(download -> download.withUrl(this.storage.getDownloadUrl(build, download)))
       .toList();
   }
 
