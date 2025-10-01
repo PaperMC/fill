@@ -13,29 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.configuration.properties;
+package io.papermc.fill.model.response;
 
-import java.util.List;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("app.security")
 @NullMarked
-public record ApplicationSecurityProperties(
-  Jwt jwt,
-  List<User> users
+public record LoginResponse(
+  boolean ok,
+  String username,
+  String token
 ) {
-  @NullMarked
-  public record Jwt(
-    String secret
-  ) {
-  }
-
-  @NullMarked
-  public record User(
-    String username,
-    String password,
-    List<String> roles
-  ) {
-  }
 }

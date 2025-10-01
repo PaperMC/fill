@@ -13,29 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.configuration.properties;
+package io.papermc.fill.service;
 
-import java.util.List;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.jspecify.annotations.Nullable;
+import org.springframework.security.core.userdetails.UserDetails;
 
-@ConfigurationProperties("app.security")
 @NullMarked
-public record ApplicationSecurityProperties(
-  Jwt jwt,
-  List<User> users
-) {
-  @NullMarked
-  public record Jwt(
-    String secret
-  ) {
-  }
+public interface JwtService {
+  @Nullable String getUsername(final String token);
 
-  @NullMarked
-  public record User(
-    String username,
-    String password,
-    List<String> roles
-  ) {
-  }
+  boolean isTokenValid(final UserDetails user, final String token);
+
+  String createJwt(final UserDetails user);
 }

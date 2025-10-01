@@ -16,11 +16,14 @@
 package io.papermc.fill.configuration;
 
 import io.papermc.fill.configuration.properties.ApplicationSecurityProperties;
+import io.papermc.fill.filter.JwtAuthenticationFilter;
 import java.util.List;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -33,6 +36,7 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -45,7 +49,7 @@ public class SecurityConfiguration {
   }
 
   @Bean
-  public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
+  public SecurityFilterChain securityFilterChain(final HttpSecurity http, final JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
     return http
       .authorizeHttpRequests(configurer -> configurer.anyRequest().permitAll())
       .cors(Customizer.withDefaults())
@@ -54,6 +58,7 @@ public class SecurityConfiguration {
       .httpBasic(Customizer.withDefaults())
       .logout(AbstractHttpConfigurer::disable)
       .sessionManagement(configurer -> configurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+      .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
       .build();
   }
 
@@ -73,5 +78,10 @@ public class SecurityConfiguration {
       })
       .toList();
     return new InMemoryUserDetailsManager(users);
+  }
+
+  @Bean
+  public AuthenticationManager authenticationManager(final AuthenticationConfiguration configuration) throws Exception {
+    return configuration.getAuthenticationManager();
   }
 }
