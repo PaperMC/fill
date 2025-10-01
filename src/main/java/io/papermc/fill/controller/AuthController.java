@@ -19,6 +19,7 @@ import io.papermc.fill.model.response.ErrorResponse;
 import io.papermc.fill.model.response.LoginResponse;
 import io.papermc.fill.service.JwtService;
 import io.papermc.fill.util.http.Responses;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -28,10 +29,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Hidden
 @NullMarked
 @RestController
 public class AuthController {
@@ -50,6 +54,7 @@ public class AuthController {
     this.jwts = jwts;
   }
 
+  @CrossOrigin(methods = RequestMethod.POST)
   @PostMapping("/auth/login")
   public ResponseEntity<?> login(
     @RequestParam
