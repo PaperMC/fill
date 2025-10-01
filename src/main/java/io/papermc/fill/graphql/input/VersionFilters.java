@@ -21,6 +21,7 @@ import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public record VersionFilters(
+  @Nullable String familyId,
   @Nullable SupportStatus supportStatus
 ) {
 }

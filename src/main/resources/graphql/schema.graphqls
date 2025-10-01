@@ -91,6 +91,8 @@ type Version {
 }
 
 input VersionFilters {
+  familyId: String
+
   supportStatus: SupportStatus
 }
 

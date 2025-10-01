@@ -135,6 +135,10 @@ public class GraphQueryController {
     Stream<VersionEntity> versions = this.versions.findAllByProject(project);
     versions = versions.sorted(Version.COMPARATOR_CREATED_AT_REVERSE);
     if (filterBy != null) {
+      final String familyId = filterBy.familyId();
+      if (familyId != null) {
+        versions = versions.filter(version -> version.family().id().equals(familyId));
+      }
       final SupportStatus filterBySupportStatus = filterBy.supportStatus();
       if (filterBySupportStatus != null) {
         versions = versions.filter(Version.isSupportStatus(filterBySupportStatus));
