@@ -13,22 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.service;
+package io.papermc.fill.model.response;
 
-import java.time.Duration;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
-import org.springframework.security.core.userdetails.UserDetails;
 
 @NullMarked
-public interface JwtService {
-  @Nullable String getUsername(final String token);
-
-  boolean isTokenValid(final UserDetails user, final String token);
-
-  String createAccessToken(final UserDetails user);
-
-  Duration getAccessTokenLifetime();
-
-  String createRefreshToken(final UserDetails user);
+public record AuthTokenResponse(
+  @JsonProperty("access_token")
+  String accessToken,
+  @JsonProperty("token_type")
+  String tokenType,
+  @JsonProperty("expires_in")
+  long expiresIn,
+  @JsonProperty("refresh_token")
+  String refreshToken
+) {
+  public static final String TOKEN_TYPE_BEARER = "bearer";
 }

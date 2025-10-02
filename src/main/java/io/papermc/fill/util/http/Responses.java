@@ -45,6 +45,10 @@ public final class Responses {
     return create(HttpStatus.CREATED, body);
   }
 
+  public static <R> ResponseEntity<R> badRequest(final R body) {
+    return create(HttpStatus.BAD_REQUEST, body);
+  }
+
   public static <R> ResponseEntity<R> unauthorized(final R body) {
     return create(HttpStatus.UNAUTHORIZED, body);
   }

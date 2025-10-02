@@ -21,6 +21,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.papermc.fill.configuration.properties.ApplicationSecurityProperties;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 import java.util.function.Function;
@@ -34,7 +35,9 @@ import org.springframework.stereotype.Service;
 @NullMarked
 @Service
 public class JwtServiceImpl implements JwtService {
-  private static final long EXPIRATION = Duration.ofHours(1).toMillis();
+  private static final Duration LIFETIME_ACCESS = Duration.ofHours(1);
+  private static final Duration LIFETIME_REFRESH = Duration.ofDays(1);
+
   private final ApplicationSecurityProperties properties;
 
   @Autowired
@@ -53,6 +56,21 @@ public class JwtServiceImpl implements JwtService {
     return username != null && username.equals(user.getUsername()) && !this.getClaim(token, Claims::getExpiration).before(new Date());
   }
 
+  @Override
+  public String createAccessToken(final UserDetails user) {
+    return this.createToken(user, LIFETIME_ACCESS);
+  }
+
+  @Override
+  public Duration getAccessTokenLifetime() {
+    return LIFETIME_ACCESS;
+  }
+
+  @Override
+  public String createRefreshToken(final UserDetails user) {
+    return this.createToken(user, LIFETIME_REFRESH);
+  }
+
   private <T> T getClaim(final String token, final Function<Claims, T> getter) {
     final Claims claims = this.extractClaims(token);
     return getter.apply(claims);
@@ -66,18 +84,13 @@ public class JwtServiceImpl implements JwtService {
       .getPayload();
   }
 
-  @Override
-  public String createJwt(final UserDetails user) {
-    return this.createJwt(user, Map.of());
-  }
-
-  private String createJwt(final UserDetails user, final Map<String, Object> claims) {
-    final long now = System.currentTimeMillis();
+  private String createToken(final UserDetails user, final Duration lifetime) {
+    final Instant now = Instant.now();
     return Jwts.builder()
-      .claims(claims)
+      .claims(Map.of())
       .subject(user.getUsername())
-      .issuedAt(new Date(now))
-      .expiration(new Date(now + EXPIRATION))
+      .issuedAt(Date.from(now))
+      .expiration(Date.from(now.plus(lifetime)))
       .signWith(this.getSecretKey(), Jwts.SIG.HS256)
       .compact();
   }

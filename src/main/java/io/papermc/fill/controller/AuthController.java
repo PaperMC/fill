@@ -15,13 +15,15 @@
  */
 package io.papermc.fill.controller;
 
-import io.papermc.fill.model.response.ErrorResponse;
-import io.papermc.fill.model.response.LoginResponse;
+import io.papermc.fill.model.response.AuthErrorResponse;
+import io.papermc.fill.model.response.AuthTokenResponse;
 import io.papermc.fill.service.JwtService;
 import io.papermc.fill.util.http.Responses;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -39,6 +41,9 @@ import org.springframework.web.bind.annotation.RestController;
 @NullMarked
 @RestController
 public class AuthController {
+  private static final String GRANT_TYPE_PASSWORD = "password";
+  private static final String GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
+
   private final AuthenticationManager authentication;
   private final UserDetailsService users;
   private final JwtService jwts;
@@ -55,20 +60,67 @@ public class AuthController {
   }
 
   @CrossOrigin(methods = RequestMethod.POST)
-  @PostMapping("/auth/login")
-  public ResponseEntity<?> login(
-    @RequestParam
-    final String username,
-    @RequestParam
-    final String password
+  @PostMapping(
+    path = "/auth/token",
+    consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE
+  )
+  public ResponseEntity<?> token(
+    @RequestParam(name = "grant_type")
+    final String grantType,
+    @RequestParam(required = false)
+    final @Nullable String username,
+    @RequestParam(required = false)
+    final @Nullable String password,
+    @RequestParam(name = "refresh_token", required = false)
+    final @Nullable String refreshToken
   ) {
+    return switch (grantType) {
+      case GRANT_TYPE_PASSWORD -> {
+        if (username == null) {
+          yield errorMissingRequiredParameter("username");
+        }
+        if (password == null) {
+          yield errorMissingRequiredParameter("password");
+        }
+        yield this.password(username, password);
+      }
+      case GRANT_TYPE_REFRESH_TOKEN -> {
+        if (refreshToken == null) {
+          yield errorMissingRequiredParameter("refresh_token");
+        }
+        yield this.refreshToken(refreshToken);
+      }
+      default -> Responses.badRequest(new AuthErrorResponse(AuthErrorResponse.ERROR_UNSUPPORTED_GRANT_TYPE, "The grant type is not supported by this authorization server"));
+    };
+  }
+
+  private ResponseEntity<?> password(final String username, final String password) {
     final Authentication authentication;
     try {
       authentication = this.authentication.authenticate(new UsernamePasswordAuthenticationToken(username, password));
     } catch (final BadCredentialsException e) {
-      return Responses.unauthorized(new ErrorResponse("bad_credentials"));
+      return Responses.unauthorized(new AuthErrorResponse(AuthErrorResponse.ERROR_INVALID_GRANT, "Bad credentials"));
     }
     final UserDetails user = this.users.loadUserByUsername(authentication.getName());
-    return Responses.ok(new LoginResponse(true, user.getUsername(), this.jwts.createJwt(user)));
+    final String access = this.jwts.createAccessToken(user);
+    final String refresh = this.jwts.createRefreshToken(user);
+    return Responses.ok(new AuthTokenResponse(access, AuthTokenResponse.TOKEN_TYPE_BEARER, this.jwts.getAccessTokenLifetime().toSeconds(), refresh));
+  }
+
+  private ResponseEntity<?> refreshToken(final String token) {
+    final String username = this.jwts.getUsername(token);
+    if (username != null) {
+      final UserDetails user = this.users.loadUserByUsername(username);
+      if (this.jwts.isTokenValid(user, token)) {
+        final String access = this.jwts.createAccessToken(user);
+        final String refresh = this.jwts.createRefreshToken(user);
+        return Responses.ok(new AuthTokenResponse(access, AuthTokenResponse.TOKEN_TYPE_BEARER, this.jwts.getAccessTokenLifetime().toSeconds(), refresh));
+      }
+    }
+    return Responses.unauthorized(new AuthErrorResponse(AuthErrorResponse.ERROR_INVALID_GRANT, "Refresh token is invalid or expired"));
+  }
+
+  private static ResponseEntity<?> errorMissingRequiredParameter(final String name) {
+    return Responses.badRequest(new AuthErrorResponse(AuthErrorResponse.ERROR_INVALID_REQUEST, "Missing required parameter: " + name));
   }
 }

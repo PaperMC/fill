@@ -15,12 +15,16 @@
  */
 package io.papermc.fill.model.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public record LoginResponse(
-  boolean ok,
-  String username,
-  String token
+public record AuthErrorResponse(
+  String error,
+  @JsonProperty("error_description")
+  String errorDescription
 ) {
+  public static final String ERROR_INVALID_GRANT = "invalid_grant";
+  public static final String ERROR_INVALID_REQUEST = "invalid_request";
+  public static final String ERROR_UNSUPPORTED_GRANT_TYPE = "unsupported_grant_type";
 }
