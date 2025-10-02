@@ -18,7 +18,7 @@ spring:
       database: fill
   graphql:
     cors:
-      allowed-origin-patterns: *
+      allowed-origin-patterns: "*"
     graphiql:
       enabled: true
     schema:
