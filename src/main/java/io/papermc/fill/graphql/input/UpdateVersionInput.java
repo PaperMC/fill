@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.graphql.input;
 
+import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Support;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -23,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 public record UpdateVersionInput(
   String project,
   String id,
-  @Nullable Support support
+  @Nullable Support support,
+  @Nullable Java java
 ) {
 }

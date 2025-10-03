@@ -228,6 +228,8 @@ input UpdateVersionInput {
   id: String!
 
   support: SupportInput
+
+  java: JavaInput
 }
 
 type CreateVersionPayload {

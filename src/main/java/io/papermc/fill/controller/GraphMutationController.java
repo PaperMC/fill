@@ -126,6 +126,10 @@ public class GraphMutationController {
     if (support != null) {
       version.setSupport(support);
     }
+    final var java = input.java();
+    if (java != null) {
+      version.setJava(java);
+    }
     version = this.versions.save(version);
     return new UpdateVersionPayload(version);
   }
