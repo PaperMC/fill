@@ -16,6 +16,7 @@
 package io.papermc.fill.service;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -24,7 +25,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
-import java.util.function.Function;
 import javax.crypto.SecretKey;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -38,22 +38,31 @@ public class JwtServiceImpl implements JwtService {
   private static final Duration LIFETIME_ACCESS = Duration.ofHours(1);
   private static final Duration LIFETIME_REFRESH = Duration.ofDays(1);
 
-  private final ApplicationSecurityProperties properties;
+  private final SecretKey key;
 
   @Autowired
   public JwtServiceImpl(final ApplicationSecurityProperties properties) {
-    this.properties = properties;
+    this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(properties.jwt().secret()));
   }
 
   @Override
-  public @Nullable String getUsername(final String token) {
-    return this.getClaim(token, Claims::getSubject);
+  public @Nullable Claims parseClaims(final String token) {
+    try {
+      return Jwts.parser()
+        .verifyWith(this.key)
+        .build()
+        .parseSignedClaims(token)
+        .getPayload();
+    } catch (final JwtException e) {
+      return null;
+    }
   }
 
   @Override
-  public boolean isTokenValid(final UserDetails user, final String token) {
-    final String username = this.getUsername(token);
-    return username != null && username.equals(user.getUsername()) && !this.getClaim(token, Claims::getExpiration).before(new Date());
+  public boolean areClaimsValidFor(final Claims claims, final UserDetails user) {
+    final String username = claims.getSubject();
+    final Date expiration = claims.getExpiration();
+    return username != null && username.equals(user.getUsername()) && expiration != null && !expiration.before(new Date());
   }
 
   @Override
@@ -71,31 +80,14 @@ public class JwtServiceImpl implements JwtService {
     return this.createToken(user, LIFETIME_REFRESH);
   }
 
-  private <T> T getClaim(final String token, final Function<Claims, T> getter) {
-    final Claims claims = this.extractClaims(token);
-    return getter.apply(claims);
-  }
-
-  private Claims extractClaims(final String token) {
-    return Jwts.parser()
-      .verifyWith(this.getSecretKey())
-      .build()
-      .parseSignedClaims(token)
-      .getPayload();
-  }
-
   private String createToken(final UserDetails user, final Duration lifetime) {
     final Instant now = Instant.now();
     return Jwts.builder()
-      .claims(Map.of())
       .subject(user.getUsername())
       .issuedAt(Date.from(now))
       .expiration(Date.from(now.plus(lifetime)))
-      .signWith(this.getSecretKey(), Jwts.SIG.HS256)
+      .claims(Map.of())
+      .signWith(this.key, Jwts.SIG.HS256)
       .compact();
-  }
-
-  private SecretKey getSecretKey() {
-    return Keys.hmacShaKeyFor(Decoders.BASE64.decode(this.properties.jwt().secret()));
   }
 }

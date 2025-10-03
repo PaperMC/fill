@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.controller;
 
+import io.jsonwebtoken.Claims;
 import io.papermc.fill.model.response.AuthErrorResponse;
 import io.papermc.fill.model.response.AuthTokenResponse;
 import io.papermc.fill.service.JwtService;
@@ -108,13 +109,16 @@ public class AuthController {
   }
 
   private ResponseEntity<?> refreshToken(final String token) {
-    final String username = this.jwts.getUsername(token);
-    if (username != null) {
-      final UserDetails user = this.users.loadUserByUsername(username);
-      if (this.jwts.isTokenValid(user, token)) {
-        final String access = this.jwts.createAccessToken(user);
-        final String refresh = this.jwts.createRefreshToken(user);
-        return Responses.ok(new AuthTokenResponse(access, AuthTokenResponse.TOKEN_TYPE_BEARER, this.jwts.getAccessTokenLifetime().toSeconds(), refresh));
+    final Claims claims = this.jwts.parseClaims(token);
+    if (claims != null) {
+      final String username = claims.getSubject();
+      if (username != null) {
+        final UserDetails user = this.users.loadUserByUsername(username);
+        if (this.jwts.areClaimsValidFor(claims, user)) {
+          final String access = this.jwts.createAccessToken(user);
+          final String refresh = this.jwts.createRefreshToken(user);
+          return Responses.ok(new AuthTokenResponse(access, AuthTokenResponse.TOKEN_TYPE_BEARER, this.jwts.getAccessTokenLifetime().toSeconds(), refresh));
+        }
       }
     }
     return Responses.unauthorized(new AuthErrorResponse(AuthErrorResponse.ERROR_INVALID_GRANT, "Refresh token is invalid or expired"));

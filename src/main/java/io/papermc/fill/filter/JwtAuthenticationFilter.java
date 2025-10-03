@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.filter;
 
+import io.jsonwebtoken.Claims;
 import io.papermc.fill.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -63,23 +64,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     if (header != null && header.startsWith(BEARER)) {
       try {
         final String jwt = header.substring(BEARER.length());
-        final String username = this.jwts.getUsername(jwt);
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-          final UserDetails user = this.users.loadUserByUsername(username);
-
-          if (this.jwts.isTokenValid(user, jwt)) {
-            final UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
-              user,
-              null,
-              user.getAuthorities()
-            );
-            token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(token);
+        final Claims claims = this.jwts.parseClaims(jwt);
+        if (claims != null) {
+          final String username = claims.getSubject();
+          if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            final UserDetails user = this.users.loadUserByUsername(username);
+            if (this.jwts.areClaimsValidFor(claims, user)) {
+              final UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+                user,
+                null,
+                user.getAuthorities()
+              );
+              token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+              SecurityContextHolder.getContext().setAuthentication(token);
+            }
           }
         }
-
-      } catch (final Exception exception) {
-        this.handlerExceptionResolver.resolveException(request, response, null, exception);
+      } catch (final Exception e) {
+        this.handlerExceptionResolver.resolveException(request, response, null, e);
       }
     }
 

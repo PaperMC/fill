@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.service;
 
+import io.jsonwebtoken.Claims;
 import java.time.Duration;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -22,9 +23,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 @NullMarked
 public interface JwtService {
-  @Nullable String getUsername(final String token);
+  @Nullable Claims parseClaims(final String token);
 
-  boolean isTokenValid(final UserDetails user, final String token);
+  boolean areClaimsValidFor(final Claims claims, final UserDetails user);
 
   String createAccessToken(final UserDetails user);
 
