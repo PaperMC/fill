@@ -22,9 +22,9 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
-import io.papermc.fill.exception.NoSuchBuildException;
-import io.papermc.fill.exception.NoSuchProjectException;
-import io.papermc.fill.exception.NoSuchVersionException;
+import io.papermc.fill.exception.BuildNotFoundException;
+import io.papermc.fill.exception.ProjectNotFoundException;
+import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.BuildWithDownloads;
@@ -160,7 +160,7 @@ public class Meta3Controller {
     @PathVariable("project")
     final String projectId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
     final ProjectResponse response = this.createProjectResponse(project);
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_PROJECT));
   }
@@ -193,7 +193,7 @@ public class Meta3Controller {
     @PathVariable("project")
     final String projectId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
     final List<VersionEntity> versions = this.versions.findAllByProject(project)
       .sorted(Version.COMPARATOR_CREATED_AT_REVERSE)
       .toList();
@@ -232,8 +232,8 @@ public class Meta3Controller {
     @PathVariable("version")
     final String versionId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
     final VersionResponse response = this.createVersionResponse(version);
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_VERSION));
   }
@@ -272,8 +272,8 @@ public class Meta3Controller {
     @RequestParam(name = "channel", required = false)
     final @Nullable BuildChannel filterByChannel
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .filter(Build.isChannel(filterByChannel))
       .sorted(Build.COMPARATOR_ID_REVERSE)
@@ -317,9 +317,9 @@ public class Meta3Controller {
     @PositiveOrZero
     final int buildId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
-    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(NoSuchBuildException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
+    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(BuildNotFoundException::new);
     final BuildResponse response = this.createBuildResponse(project, version, build);
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_BUILD));
   }
@@ -353,13 +353,13 @@ public class Meta3Controller {
     @PathVariable("version")
     final String versionId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .sorted(Build.COMPARATOR_ID_REVERSE)
       .toList();
     if (builds.isEmpty()) {
-      throw new NoSuchBuildException();
+      throw new BuildNotFoundException();
     } else {
       final BuildEntity build = builds.getFirst();
       final BuildResponse response = this.createBuildResponse(project, version, build);

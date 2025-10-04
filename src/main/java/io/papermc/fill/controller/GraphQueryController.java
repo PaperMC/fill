@@ -39,7 +39,6 @@ import io.papermc.fill.service.StorageService;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
@@ -175,8 +174,8 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Version", field = "java")
-  public Java mapVersionJava(final VersionEntity version) {
-    return Objects.requireNonNullElse(version.java(), version.family().java());
+  public @Nullable Java mapVersionJava(final VersionEntity version) {
+    return version.java();
   }
 
   @SchemaMapping(typeName = "Version", field = "builds")

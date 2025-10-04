@@ -18,8 +18,8 @@ package io.papermc.fill.exception;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class FamilyAlreadyExistsException extends AppException {
-  public FamilyAlreadyExistsException() {
-    super("A family with the specified name already exists in this project.");
+public class FamilyInUseException extends AppException {
+  public FamilyInUseException(final String message) {
+    super(message);
   }
 }

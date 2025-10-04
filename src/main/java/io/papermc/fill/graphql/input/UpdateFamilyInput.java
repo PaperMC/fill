@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.exception;
+package io.papermc.fill.graphql.input;
 
+import io.papermc.fill.model.Java;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public class NoSuchFamilyException extends AppException {
-  public NoSuchFamilyException() {
-    super("The specified family was not found.");
-  }
+public record UpdateFamilyInput(
+  String project,
+  String id,
+  @Nullable Java java
+) {
 }

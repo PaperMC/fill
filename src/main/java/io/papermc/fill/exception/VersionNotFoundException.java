@@ -18,8 +18,8 @@ package io.papermc.fill.exception;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class NoSuchVersionException extends AppException {
-  public NoSuchVersionException() {
-    super("The specified version was not found.");
+public class VersionNotFoundException extends AppException {
+  public VersionNotFoundException() {
+    super("No version was found with the given identifier.");
   }
 }

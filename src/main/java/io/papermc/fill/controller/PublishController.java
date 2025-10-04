@@ -24,14 +24,14 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
-import io.papermc.fill.exception.BuildAlreadyExistsException;
 import io.papermc.fill.exception.ChecksumMismatchException;
+import io.papermc.fill.exception.DownloadNotFoundException;
+import io.papermc.fill.exception.DuplicateBuildException;
 import io.papermc.fill.exception.InvalidStagingInstanceException;
-import io.papermc.fill.exception.NoSuchDownloadException;
-import io.papermc.fill.exception.NoSuchProjectException;
-import io.papermc.fill.exception.NoSuchVersionException;
+import io.papermc.fill.exception.ProjectNotFoundException;
 import io.papermc.fill.exception.PublishFailedException;
 import io.papermc.fill.exception.StorageWriteException;
+import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.model.Checksums;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
@@ -146,11 +146,11 @@ public class PublishController {
       this.instances.invalidate(request.id());
     }
 
-    final ProjectEntity project = this.projects.findByName(request.project()).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, request.version()).orElseThrow(NoSuchVersionException::new);
+    final ProjectEntity project = this.projects.findByName(request.project()).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, request.version()).orElseThrow(VersionNotFoundException::new);
 
     if (this.builds.findByVersionAndNumber(version, request.build()).isPresent()) {
-      throw createPublishFailedException(request, "Build already exists", new BuildAlreadyExistsException());
+      throw createPublishFailedException(request, "Build already exists", new DuplicateBuildException());
     }
 
     final List<Commit> commits = request.commits().reversed();
@@ -173,12 +173,12 @@ public class PublishController {
       final Download download = entry.getValue();
       final byte[] bytes = instance.removeStagedFile(download.name());
       if (bytes == null) {
-        throw createPublishFailedException(request, String.format("Download %s has no associated file", download.name()), new NoSuchDownloadException());
+        throw createPublishFailedException(request, String.format("Download %s has no associated file", download.name()), new DownloadNotFoundException());
       }
       final Checksums checksums = createChecksums(bytes);
       if (!download.checksums().equals(checksums)) {
         final String message = String.format(
-          "Download %s has mis-matching checksums (expected %s, got %s)",
+          "Checksum mismatch for download %s: expected %s but got %s",
           download.name(),
           download.checksums(),
           checksums
@@ -194,7 +194,7 @@ public class PublishController {
     }
 
     if (!instance.hasAnyStagedFiles()) {
-      throw createPublishFailedException(request, String.format("Additional files (%s) were provided that have no defined downloads", String.join(", ", instance.files.keySet())), new NoSuchDownloadException());
+      throw createPublishFailedException(request, String.format("Additional files (%s) were provided that have no defined downloads", String.join(", ", instance.files.keySet())), new DownloadNotFoundException());
     }
 
     this.builds.save(build);

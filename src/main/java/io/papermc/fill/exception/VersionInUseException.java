@@ -18,8 +18,8 @@ package io.papermc.fill.exception;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class NoSuchBuildException extends AppException {
-  public NoSuchBuildException() {
-    super("The specified build was not found.");
+public class VersionInUseException extends AppException {
+  public VersionInUseException(final String message) {
+    super(message);
   }
 }

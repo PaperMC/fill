@@ -23,21 +23,30 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
-import io.papermc.fill.exception.FamilyAlreadyExistsException;
-import io.papermc.fill.exception.NoSuchBuildException;
-import io.papermc.fill.exception.NoSuchFamilyException;
-import io.papermc.fill.exception.NoSuchProjectException;
-import io.papermc.fill.exception.NoSuchVersionException;
-import io.papermc.fill.exception.VersionAlreadyExistsException;
+import io.papermc.fill.exception.BuildNotFoundException;
+import io.papermc.fill.exception.DuplicateFamilyException;
+import io.papermc.fill.exception.DuplicateVersionException;
+import io.papermc.fill.exception.FamilyInUseException;
+import io.papermc.fill.exception.FamilyNotFoundException;
+import io.papermc.fill.exception.ProjectNotFoundException;
+import io.papermc.fill.exception.VersionInUseException;
+import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.graphql.input.CreateFamilyInput;
 import io.papermc.fill.graphql.input.CreateVersionInput;
+import io.papermc.fill.graphql.input.DeleteFamilyInput;
+import io.papermc.fill.graphql.input.DeleteVersionInput;
 import io.papermc.fill.graphql.input.PromoteBuildInput;
+import io.papermc.fill.graphql.input.UpdateFamilyInput;
 import io.papermc.fill.graphql.input.UpdateVersionInput;
 import io.papermc.fill.graphql.payload.CreateFamilyPayload;
 import io.papermc.fill.graphql.payload.CreateVersionPayload;
+import io.papermc.fill.graphql.payload.DeleteFamilyPayload;
+import io.papermc.fill.graphql.payload.DeleteVersionPayload;
 import io.papermc.fill.graphql.payload.PromoteBuildPayload;
+import io.papermc.fill.graphql.payload.UpdateFamilyPayload;
 import io.papermc.fill.graphql.payload.UpdateVersionPayload;
 import io.papermc.fill.model.BuildChannel;
+import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Support;
 import io.papermc.fill.model.SupportStatus;
 import java.time.Instant;
@@ -76,9 +85,9 @@ public class GraphMutationController {
     @Argument
     final CreateFamilyInput input
   ) {
-    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(NoSuchProjectException::new);
+    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
     if (this.families.findByProjectAndName(project, input.id()).isPresent()) {
-      throw new FamilyAlreadyExistsException();
+      throw new DuplicateFamilyException();
     }
     final FamilyEntity entity = this.families.save(FamilyEntity.create(
       new ObjectId(),
@@ -90,16 +99,46 @@ public class GraphMutationController {
     return new CreateFamilyPayload(entity);
   }
 
+  @MutationMapping("updateFamily")
+  @PreAuthorize("hasRole('API_MANAGE')")
+  public UpdateFamilyPayload updateFamily(
+    @Argument
+    final UpdateFamilyInput input
+  ) {
+    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
+    FamilyEntity family = this.families.findByProjectAndName(project, input.id()).orElseThrow(FamilyNotFoundException::new);
+    final Java java = input.java();
+    if (java != null) {
+      family.setJava(java);
+    }
+    family = this.families.save(family);
+    return new UpdateFamilyPayload(family);
+  }
+
+  @MutationMapping("deleteFamily")
+  @PreAuthorize("hasRole('API_MANAGE')")
+  public DeleteFamilyPayload deleteFamily(
+    @Argument
+    final DeleteFamilyInput input
+  ) {
+    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
+    final FamilyEntity family = this.families.findByProjectAndName(project, input.id()).orElseThrow(FamilyNotFoundException::new);
+    if (this.versions.findAllByFamily(family).findAny().isPresent()) {
+      throw new FamilyInUseException("Cannot delete this family because one or more versions are still associated with it.");
+    }
+    return new DeleteFamilyPayload(true);
+  }
+
   @MutationMapping("createVersion")
   @PreAuthorize("hasRole('API_MANAGE')")
   public CreateVersionPayload createVersion(
     @Argument
     final CreateVersionInput input
   ) {
-    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(NoSuchProjectException::new);
-    final FamilyEntity family = this.families.findByProjectAndName(project, input.family()).orElseThrow(NoSuchFamilyException::new);
+    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
+    final FamilyEntity family = this.families.findByProjectAndName(project, input.family()).orElseThrow(FamilyNotFoundException::new);
     if (this.versions.findByProjectAndName(project, input.id()).isPresent()) {
-      throw new VersionAlreadyExistsException();
+      throw new DuplicateVersionException();
     }
     final VersionEntity entity = this.versions.save(VersionEntity.create(
       new ObjectId(),
@@ -120,18 +159,30 @@ public class GraphMutationController {
     @Argument
     final UpdateVersionInput input
   ) {
-    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(NoSuchProjectException::new);
-    VersionEntity version = this.versions.findByProjectAndName(project, input.id()).orElseThrow(NoSuchVersionException::new);
+    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
+    VersionEntity version = this.versions.findByProjectAndName(project, input.id()).orElseThrow(VersionNotFoundException::new);
+    version.setJava(input.java());
     final Support support = input.support();
     if (support != null) {
       version.setSupport(support);
     }
-    final var java = input.java();
-    if (java != null) {
-      version.setJava(java);
-    }
+    version.setJava(input.java());
     version = this.versions.save(version);
     return new UpdateVersionPayload(version);
+  }
+
+  @MutationMapping("deleteVersion")
+  @PreAuthorize("hasRole('API_MANAGE')")
+  public DeleteVersionPayload deleteVersion(
+    @Argument
+    final DeleteVersionInput input
+  ) {
+    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, input.id()).orElseThrow(VersionNotFoundException::new);
+    if (this.builds.findAllByVersion(version).findAny().isPresent()) {
+      throw new VersionInUseException("Cannot delete this version because one or more builds are still associated with it.");
+    }
+    return new DeleteVersionPayload(true);
   }
 
   @MutationMapping("promoteBuild")
@@ -140,9 +191,9 @@ public class GraphMutationController {
     @Argument
     final PromoteBuildInput input
   ) {
-    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(NoSuchProjectException::new);
-    VersionEntity version = this.versions.findByProjectAndName(project, input.version()).orElseThrow(NoSuchVersionException::new);
-    BuildEntity build = this.builds.findByVersionAndNumber(version, input.id()).orElseThrow(NoSuchBuildException::new);
+    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
+    VersionEntity version = this.versions.findByProjectAndName(project, input.version()).orElseThrow(VersionNotFoundException::new);
+    BuildEntity build = this.builds.findByVersionAndNumber(version, input.id()).orElseThrow(BuildNotFoundException::new);
 
     build.setChannel(BuildChannel.RECOMMENDED);
     build = this.builds.save(build);

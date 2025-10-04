@@ -18,8 +18,8 @@ package io.papermc.fill.exception;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class NoSuchProjectException extends AppException {
-  public NoSuchProjectException() {
-    super("The specified project was not found.");
+public class BuildNotFoundException extends AppException {
+  public BuildNotFoundException() {
+    super("No build was found with the given identifier.");
   }
 }

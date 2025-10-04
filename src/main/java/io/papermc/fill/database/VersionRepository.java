@@ -32,6 +32,8 @@ public interface VersionRepository extends MongoRepository<VersionEntity, Object
     final String name
   );
 
+  Stream<VersionEntity> findAllByFamily(final FamilyEntity family);
+
   @Deprecated(forRemoval = true)
   Stream<VersionEntity> findAllByProjectAndFamily(
     final ProjectEntity project,

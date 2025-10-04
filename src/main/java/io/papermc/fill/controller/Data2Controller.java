@@ -21,12 +21,12 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
+import io.papermc.fill.exception.BuildNotFoundException;
 import io.papermc.fill.exception.DownloadFailedException;
-import io.papermc.fill.exception.NoSuchBuildException;
-import io.papermc.fill.exception.NoSuchDownloadException;
-import io.papermc.fill.exception.NoSuchProjectException;
-import io.papermc.fill.exception.NoSuchVersionException;
+import io.papermc.fill.exception.DownloadNotFoundException;
+import io.papermc.fill.exception.ProjectNotFoundException;
 import io.papermc.fill.exception.StorageReadException;
+import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.http.Caching;
@@ -82,9 +82,9 @@ public class Data2Controller {
     @PathVariable("download")
     final String downloadName
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
-    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(NoSuchBuildException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
+    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(BuildNotFoundException::new);
 
     final Download download = build.getDownloadByName(downloadName);
     if (download != null) {
@@ -115,6 +115,6 @@ public class Data2Controller {
       }
     }
 
-    throw new NoSuchDownloadException();
+    throw new DownloadNotFoundException();
   }
 }

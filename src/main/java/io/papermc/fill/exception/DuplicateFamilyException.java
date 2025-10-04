@@ -18,8 +18,8 @@ package io.papermc.fill.exception;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class NoSuchDownloadException extends AppException {
-  public NoSuchDownloadException() {
-    super("The specified download was not found.");
+public class DuplicateFamilyException extends AppException {
+  public DuplicateFamilyException() {
+    super("A family with the specified name already exists in this project.");
   }
 }

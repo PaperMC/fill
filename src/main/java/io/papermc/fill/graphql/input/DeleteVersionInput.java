@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.exception;
+package io.papermc.fill.graphql.input;
 
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class VersionAlreadyExistsException extends AppException {
-  public VersionAlreadyExistsException() {
-    super("A version with the specified name already exists in this project.");
-  }
+public record DeleteVersionInput(
+  String project,
+  String id
+) {
 }

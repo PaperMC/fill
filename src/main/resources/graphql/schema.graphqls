@@ -17,6 +17,14 @@ type Mutation {
     input: CreateFamilyInput!
   ): CreateFamilyPayload
 
+  updateFamily(
+    input: UpdateFamilyInput!
+  ): UpdateFamilyPayload
+
+  deleteFamily(
+    input: DeleteFamilyInput!
+  ): DeleteFamilyPayload
+
   createVersion(
     input: CreateVersionInput!
   ): CreateVersionPayload
@@ -24,6 +32,10 @@ type Mutation {
   updateVersion(
     input: UpdateVersionInput!
   ): UpdateVersionPayload
+
+  deleteVersion(
+    input: DeleteVersionInput!
+  ): DeleteVersionPayload
 
   promoteBuild(
     input: PromoteBuildInput!
@@ -75,7 +87,7 @@ type Version {
 
   support: Support!
 
-  java: Java!
+  java: Java
 
   builds(
     """
@@ -205,11 +217,36 @@ input CreateFamilyInput {
   java: JavaInput!
 }
 
+input UpdateFamilyInput {
+  project: String!
+
+  id: String!
+
+  java: JavaInput
+}
+
+input DeleteFamilyInput {
+  project: String!
+
+  id: String!
+}
+
 type CreateFamilyPayload {
   """
   The new family.
   """
   family: Family
+}
+
+type UpdateFamilyPayload {
+  """
+  The family.
+  """
+  family: Family
+}
+
+type DeleteFamilyPayload {
+  ok: Boolean
 }
 
 input CreateVersionInput {
@@ -232,6 +269,12 @@ input UpdateVersionInput {
   java: JavaInput
 }
 
+input DeleteVersionInput {
+  project: String!
+
+  id: String!
+}
+
 type CreateVersionPayload {
   """
   The new version.
@@ -244,6 +287,10 @@ type UpdateVersionPayload {
   The version.
   """
   version: Version
+}
+
+type DeleteVersionPayload {
+  ok: Boolean!
 }
 
 input PromoteBuildInput {

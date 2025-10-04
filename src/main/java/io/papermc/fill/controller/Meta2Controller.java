@@ -25,10 +25,10 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
-import io.papermc.fill.exception.NoSuchBuildException;
-import io.papermc.fill.exception.NoSuchFamilyException;
-import io.papermc.fill.exception.NoSuchProjectException;
-import io.papermc.fill.exception.NoSuchVersionException;
+import io.papermc.fill.exception.BuildNotFoundException;
+import io.papermc.fill.exception.FamilyNotFoundException;
+import io.papermc.fill.exception.ProjectNotFoundException;
+import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Commit;
@@ -110,7 +110,7 @@ public class Meta2Controller {
     @PathVariable("project")
     final String projectId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
     final List<FamilyEntity> families = this.families.findAllByProject(project).toList();
     final List<VersionEntity> versions = this.versions.findAllByProject(project).toList();
     final ProjectResponse response = new ProjectResponse(
@@ -130,8 +130,8 @@ public class Meta2Controller {
     @PathVariable("family")
     final String familyId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
-    final FamilyEntity family = this.families.findByProjectAndName(project, familyId).orElseThrow(NoSuchVersionException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
+    final FamilyEntity family = this.families.findByProjectAndName(project, familyId).orElseThrow(VersionNotFoundException::new);
     final List<VersionEntity> versions = this.versions.findAllByProjectAndFamily(project, family).toList();
     final FamilyResponse response = new FamilyResponse(
       project.id(),
@@ -150,8 +150,8 @@ public class Meta2Controller {
     @PathVariable("family")
     final String familyId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
-    final FamilyEntity family = this.families.findByProjectAndName(project, familyId).orElseThrow(NoSuchFamilyException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
+    final FamilyEntity family = this.families.findByProjectAndName(project, familyId).orElseThrow(FamilyNotFoundException::new);
     final List<VersionEntity> versions = this.versions.findAllByProjectAndFamily(project, family).toList();
     final List<BuildEntity> builds = this.builds.findAllByVersionIn(versions)
       .sorted(Build.COMPARATOR_ID)
@@ -182,8 +182,8 @@ public class Meta2Controller {
     @PathVariable("version")
     final String versionId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .sorted(Build.COMPARATOR_ID)
       .toList();
@@ -204,8 +204,8 @@ public class Meta2Controller {
     @PathVariable("version")
     final String versionId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .sorted(Build.COMPARATOR_ID)
       .toList();
@@ -236,9 +236,9 @@ public class Meta2Controller {
     @PositiveOrZero
     final int buildId
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(NoSuchProjectException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(NoSuchVersionException::new);
-    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(NoSuchBuildException::new);
+    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
+    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(BuildNotFoundException::new);
     final BuildResponse response = new BuildResponse(
       project.id(),
       project.name(),

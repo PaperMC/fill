@@ -17,17 +17,19 @@ package io.papermc.fill.controller.advice;
 
 import io.papermc.fill.api.ApiRoute;
 import io.papermc.fill.api.ApiVersion;
-import io.papermc.fill.exception.BuildAlreadyExistsException;
+import io.papermc.fill.exception.BuildNotFoundException;
+import io.papermc.fill.exception.ChecksumMismatchException;
+import io.papermc.fill.exception.CommitOrderValidationException;
 import io.papermc.fill.exception.DiscontinuedException;
 import io.papermc.fill.exception.DownloadFailedException;
-import io.papermc.fill.exception.FamilyAlreadyExistsException;
-import io.papermc.fill.exception.NoSuchBuildException;
-import io.papermc.fill.exception.NoSuchDownloadException;
-import io.papermc.fill.exception.NoSuchFamilyException;
-import io.papermc.fill.exception.NoSuchProjectException;
-import io.papermc.fill.exception.NoSuchVersionException;
+import io.papermc.fill.exception.DownloadNotFoundException;
+import io.papermc.fill.exception.DuplicateBuildException;
+import io.papermc.fill.exception.DuplicateFamilyException;
+import io.papermc.fill.exception.DuplicateVersionException;
+import io.papermc.fill.exception.FamilyNotFoundException;
+import io.papermc.fill.exception.ProjectNotFoundException;
 import io.papermc.fill.exception.PublishFailedException;
-import io.papermc.fill.exception.VersionAlreadyExistsException;
+import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.model.response.ErrorResponse;
 import io.papermc.fill.model.response.LegacyErrorResponse;
 import io.papermc.fill.util.http.Responses;
@@ -55,32 +57,47 @@ public class ExceptionRestControllerAdvice {
   }
 
   @ExceptionHandler({
-    NoSuchBuildException.class,
-    NoSuchDownloadException.class,
-    NoSuchFamilyException.class,
-    NoSuchProjectException.class,
-    NoSuchVersionException.class
+    ChecksumMismatchException.class,
+    CommitOrderValidationException.class
+  })
+  public ResponseEntity<?> on400BadRequest(final Throwable throwable) {
+    return Responses.badRequest(new ErrorResponse(
+      switch (throwable) {
+        case final ChecksumMismatchException _ -> "checksum_mismatch";
+        case final CommitOrderValidationException _ -> "commit_order_validation";
+        default -> throw new IllegalStateException("Unexpected value: " + throwable);
+      },
+      throwable.getMessage()
+    ));
+  }
+
+  @ExceptionHandler({
+    BuildNotFoundException.class,
+    DownloadNotFoundException.class,
+    FamilyNotFoundException.class,
+    ProjectNotFoundException.class,
+    VersionNotFoundException.class
   })
   public ResponseEntity<?> on404NotFound(final WebRequest request, final Throwable throwable) {
     if (ApiRoute.isApiRoute(request, ApiVersion.V2)) {
       return Responses.notFound(new LegacyErrorResponse(
         switch (throwable) {
-          case final NoSuchBuildException _ -> "Build not found.";
-          case final NoSuchDownloadException _ -> "Download not found.";
-          case final NoSuchFamilyException _ -> "Family not found.";
-          case final NoSuchProjectException _ -> "Project not found.";
-          case final NoSuchVersionException _ -> "Version not found.";
+          case final BuildNotFoundException _ -> "Build not found.";
+          case final DownloadNotFoundException _ -> "Download not found.";
+          case final FamilyNotFoundException _ -> "Family not found.";
+          case final ProjectNotFoundException _ -> "Project not found.";
+          case final VersionNotFoundException _ -> "Version not found.";
           default -> throw new IllegalStateException("Unexpected value: " + throwable);
         }
       ));
     }
     return Responses.notFound(new ErrorResponse(
       switch (throwable) {
-        case final NoSuchBuildException _ -> "build_not_found";
-        case final NoSuchDownloadException _ -> "download_not_found";
-        case final NoSuchFamilyException _ -> "family_not_found";
-        case final NoSuchProjectException _ -> "project_not_found";
-        case final NoSuchVersionException _ -> "version_not_found";
+        case final BuildNotFoundException _ -> "build_not_found";
+        case final DownloadNotFoundException _ -> "download_not_found";
+        case final FamilyNotFoundException _ -> "family_not_found";
+        case final ProjectNotFoundException _ -> "project_not_found";
+        case final VersionNotFoundException _ -> "version_not_found";
         default -> throw new IllegalStateException("Unexpected value: " + throwable);
       },
       throwable.getMessage()
@@ -93,16 +110,16 @@ public class ExceptionRestControllerAdvice {
   }
 
   @ExceptionHandler({
-    BuildAlreadyExistsException.class,
-    FamilyAlreadyExistsException.class,
-    VersionAlreadyExistsException.class
+    DuplicateBuildException.class,
+    DuplicateFamilyException.class,
+    DuplicateVersionException.class
   })
   public ResponseEntity<?> on409Conflict(final Throwable throwable) {
     return Responses.conflict(new ErrorResponse(
       switch (throwable) {
-        case final BuildAlreadyExistsException _ -> "build_already_exists";
-        case final FamilyAlreadyExistsException _ -> "family_already_exists";
-        case final VersionAlreadyExistsException _ -> "version_already_exists";
+        case final DuplicateBuildException _ -> "build_already_exists";
+        case final DuplicateFamilyException _ -> "family_already_exists";
+        case final DuplicateVersionException _ -> "version_already_exists";
         default -> throw new IllegalStateException("Unexpected value: " + throwable);
       },
       throwable.getMessage()

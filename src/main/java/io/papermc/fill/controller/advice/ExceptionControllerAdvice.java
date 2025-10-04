@@ -19,13 +19,16 @@ import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
 import graphql.schema.DataFetchingEnvironment;
 import io.papermc.fill.exception.AppException;
-import io.papermc.fill.exception.BuildAlreadyExistsException;
-import io.papermc.fill.exception.FamilyAlreadyExistsException;
-import io.papermc.fill.exception.NoSuchBuildException;
-import io.papermc.fill.exception.NoSuchFamilyException;
-import io.papermc.fill.exception.NoSuchProjectException;
-import io.papermc.fill.exception.NoSuchVersionException;
-import io.papermc.fill.exception.VersionAlreadyExistsException;
+import io.papermc.fill.exception.BuildNotFoundException;
+import io.papermc.fill.exception.DownloadNotFoundException;
+import io.papermc.fill.exception.DuplicateBuildException;
+import io.papermc.fill.exception.DuplicateFamilyException;
+import io.papermc.fill.exception.DuplicateVersionException;
+import io.papermc.fill.exception.FamilyInUseException;
+import io.papermc.fill.exception.FamilyNotFoundException;
+import io.papermc.fill.exception.ProjectNotFoundException;
+import io.papermc.fill.exception.VersionInUseException;
+import io.papermc.fill.exception.VersionNotFoundException;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.graphql.data.method.annotation.GraphQlExceptionHandler;
 import org.springframework.graphql.execution.ErrorType;
@@ -36,10 +39,11 @@ import reactor.core.publisher.Mono;
 @NullMarked
 public class ExceptionControllerAdvice {
   @GraphQlExceptionHandler({
-    NoSuchBuildException.class,
-    NoSuchFamilyException.class,
-    NoSuchProjectException.class,
-    NoSuchVersionException.class
+    BuildNotFoundException.class,
+    DownloadNotFoundException.class,
+    FamilyNotFoundException.class,
+    ProjectNotFoundException.class,
+    VersionNotFoundException.class
   })
   public Mono<GraphQLError> onNotFound(final AppException exception, final DataFetchingEnvironment environment) {
     return Mono.just(
@@ -51,9 +55,11 @@ public class ExceptionControllerAdvice {
   }
 
   @GraphQlExceptionHandler({
-    BuildAlreadyExistsException.class,
-    FamilyAlreadyExistsException.class,
-    VersionAlreadyExistsException.class
+    DuplicateBuildException.class,
+    DuplicateFamilyException.class,
+    FamilyInUseException.class,
+    DuplicateVersionException.class,
+    VersionInUseException.class
   })
   public Mono<GraphQLError> onBadRequest(final AppException exception, final DataFetchingEnvironment environment) {
     return Mono.just(
