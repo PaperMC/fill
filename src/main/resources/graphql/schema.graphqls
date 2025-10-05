@@ -45,6 +45,8 @@ type Mutation {
 type Project {
   id: String!
 
+  name: String!
+
   families: [Family]
 
   family(

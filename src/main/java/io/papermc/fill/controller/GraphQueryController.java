@@ -95,6 +95,11 @@ public class GraphQueryController {
     return project.id();
   }
 
+  @SchemaMapping(typeName = "Project", field = "name")
+  public String mapProjectName(final ProjectEntity project) {
+    return project.name();
+  }
+
   @SchemaMapping(typeName = "Project", field = "families")
   public List<FamilyEntity> mapProjectFamilies(
     final ProjectEntity project
@@ -134,9 +139,9 @@ public class GraphQueryController {
     Stream<VersionEntity> versions = this.versions.findAllByProject(project);
     versions = versions.sorted(Version.COMPARATOR_CREATED_AT_REVERSE);
     if (filterBy != null) {
-      final String familyId = filterBy.familyId();
-      if (familyId != null) {
-        versions = versions.filter(version -> version.family().id().equals(familyId));
+      final String filterByFamilyId = filterBy.familyId();
+      if (filterByFamilyId != null) {
+        versions = versions.filter(version -> version.family().id().equals(filterByFamilyId));
       }
       final SupportStatus filterBySupportStatus = filterBy.supportStatus();
       if (filterBySupportStatus != null) {
