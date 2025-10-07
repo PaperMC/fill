@@ -102,7 +102,7 @@ dependencies {
   implementation("com.discord4j:discord4j-core:3.3.0-RC3")
   implementation("com.github.ben-manes.caffeine:caffeine:3.2.2")
   implementation("com.google.guava:guava:33.5.0-jre")
-  implementation("com.graphql-java:graphql-java-extended-scalars:24.0")
+  implementation("com.graphql-java:graphql-java-extended-scalars:2023-01-24T02-11-56-babda5f")
   implementation("io.jsonwebtoken:jjwt-api:0.13.0")
   implementation("io.jsonwebtoken:jjwt-impl:0.13.0")
   implementation("io.jsonwebtoken:jjwt-jackson:0.13.0")
