@@ -15,23 +15,61 @@
  */
 package io.papermc.fill.database;
 
+import io.papermc.fill.model.BuildChannel;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @NullMarked
 @Repository
 public interface BuildRepository extends MongoRepository<BuildEntity, ObjectId> {
-  Stream<BuildEntity> findAllByVersion(final VersionEntity version);
+  default Stream<BuildEntity> findAllByVersion(final VersionEntity version) {
+    return this.findAllByVersion(version, Pageable.unpaged());
+  }
 
+  @Query(sort = "{'number': -1}")
+  Stream<BuildEntity> findAllByVersion(
+    final VersionEntity version,
+    final Pageable pageable
+  );
+
+  @Query(sort = "{'number': -1}")
+  Stream<BuildEntity> findAllByVersionAndChannel(
+    final VersionEntity version,
+    final @Nullable BuildChannel channel,
+    final Pageable pageable
+  );
+
+  default Stream<BuildEntity> findByVersionAndOptionalChannel(
+    final VersionEntity version,
+    final @Nullable BuildChannel channel,
+    final Pageable pageable
+  ) {
+    if (channel != null) {
+      return this.findAllByVersionAndChannel(version, channel, pageable);
+    } else {
+      return this.findAllByVersion(version, pageable);
+    }
+  }
+
+  @Deprecated(forRemoval = true)
   Stream<BuildEntity> findAllByVersionIn(final Collection<VersionEntity> version);
 
   Optional<BuildEntity> findByVersionAndNumber(
     final VersionEntity version,
     final int number
   );
+
+  @Query(sort = "{'number': -1}")
+  Stream<BuildIdentity> findAllIdentitiesByVersion(final VersionEntity version);
+
+  @Query(sort = "{'number': -1}")
+  Stream<BuildIdentity> findAllIdentitiesByVersionIn(final Collection<ObjectId> version);
 }

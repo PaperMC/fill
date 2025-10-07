@@ -25,7 +25,6 @@ import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
 import io.papermc.fill.graphql.input.BuildFilters;
 import io.papermc.fill.graphql.input.VersionFilters;
-import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.DownloadWithUrl;
@@ -44,6 +43,7 @@ import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
@@ -137,7 +137,6 @@ public class GraphQueryController {
     final @Nullable Integer last
   ) {
     Stream<VersionEntity> versions = this.versions.findAllByProject(project);
-    versions = versions.sorted(Version.COMPARATOR_CREATED_AT_REVERSE);
     if (filterBy != null) {
       final String filterByFamilyId = filterBy.familyId();
       if (filterByFamilyId != null) {
@@ -191,16 +190,13 @@ public class GraphQueryController {
     @Argument
     final @Nullable Integer last
   ) {
-    Stream<BuildEntity> builds = this.builds.findAllByVersion(version);
-    builds = builds.sorted(Build.COMPARATOR_ID_REVERSE);
+    final Pageable pageable = last != null ? Pageable.ofSize(last) : Pageable.unpaged();
+    final Stream<BuildEntity> builds;
     if (filterBy != null) {
       final BuildChannel filterByChannel = filterBy.channel();
-      if (filterByChannel != null) {
-        builds = builds.filter(Build.isChannel(filterByChannel));
-      }
-    }
-    if (last != null) {
-      builds = builds.limit(last);
+      builds = this.builds.findByVersionAndOptionalChannel(version, filterByChannel, pageable);
+    } else {
+      builds = this.builds.findAllByVersion(version, pageable);
     }
     return builds.toList();
   }
@@ -224,7 +220,7 @@ public class GraphQueryController {
   public List<DownloadWithUrl> mapBuildDownloads(final BuildEntity build) {
     return build.downloads().values()
       .stream()
-      .map(download -> download.withUrl(this.storage.getDownloadUrl(build, download)))
+      .map(download -> download.withUrl(this.storage.getDownloadUrl(build.project(), build.version(), build, download)))
       .toList();
   }
 
@@ -236,7 +232,7 @@ public class GraphQueryController {
   ) {
     final Download download = build.getDownloadByKey(name);
     return download != null
-      ? download.withUrl(this.storage.getDownloadUrl(build, download))
+      ? download.withUrl(this.storage.getDownloadUrl(build.project(), build.version(), build, download))
       : null;
   }
 }

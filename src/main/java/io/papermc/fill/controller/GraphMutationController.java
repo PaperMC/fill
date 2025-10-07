@@ -161,10 +161,9 @@ public class GraphMutationController {
   ) {
     final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
     VersionEntity version = this.versions.findByProjectAndName(project, input.id()).orElseThrow(VersionNotFoundException::new);
-    version.setJava(input.java());
-    final Support support = input.support();
-    if (support != null) {
-      version.setSupport(support);
+    final Support newSupport = input.support();
+    if (newSupport != null) {
+      version.setSupport(newSupport);
     }
     version.setJava(input.java());
     version = this.versions.save(version);

@@ -132,7 +132,7 @@ public class Meta2Controller {
   ) {
     final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
     final FamilyEntity family = this.families.findByProjectAndName(project, familyId).orElseThrow(VersionNotFoundException::new);
-    final List<VersionEntity> versions = this.versions.findAllByProjectAndFamily(project, family).toList();
+    final List<VersionEntity> versions = this.versions.findAllByFamily(family).toList();
     final FamilyResponse response = new FamilyResponse(
       project.id(),
       project.name(),
@@ -152,7 +152,7 @@ public class Meta2Controller {
   ) {
     final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
     final FamilyEntity family = this.families.findByProjectAndName(project, familyId).orElseThrow(FamilyNotFoundException::new);
-    final List<VersionEntity> versions = this.versions.findAllByProjectAndFamily(project, family).toList();
+    final List<VersionEntity> versions = this.versions.findAllByFamily(family).toList();
     final List<BuildEntity> builds = this.builds.findAllByVersionIn(versions)
       .sorted(Build.COMPARATOR_ID)
       .toList();
