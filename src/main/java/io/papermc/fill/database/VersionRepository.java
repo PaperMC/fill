@@ -19,13 +19,20 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @NullMarked
 @Repository
 public interface VersionRepository extends MongoRepository<VersionEntity, ObjectId> {
-  Stream<VersionEntity> findAllByProject(final ProjectEntity project);
+  default Stream<VersionEntity> findAllByProject(final ProjectEntity project) {
+    return this.findAllByProject(project, Pageable.unpaged());
+  }
+
+  @Query(sort = "{'createdAt': -1}")
+  Stream<VersionEntity> findAllByProject(final ProjectEntity project, final Pageable pageable);
 
   Optional<VersionEntity> findByProjectAndName(
     final ProjectEntity project,
@@ -33,10 +40,4 @@ public interface VersionRepository extends MongoRepository<VersionEntity, Object
   );
 
   Stream<VersionEntity> findAllByFamily(final FamilyEntity family);
-
-  @Deprecated(forRemoval = true)
-  Stream<VersionEntity> findAllByProjectAndFamily(
-    final ProjectEntity project,
-    final FamilyEntity family
-  );
 }

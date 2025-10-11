@@ -16,7 +16,6 @@
 package io.papermc.fill.service;
 
 import io.papermc.fill.configuration.properties.ApplicationApiProperties;
-import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.exception.StorageReadException;
 import io.papermc.fill.exception.StorageWriteException;
 import io.papermc.fill.model.BuildWithDownloads;
@@ -66,14 +65,6 @@ public interface StorageService {
         DOWNLOAD_SHA256, download.checksums().sha256()
       )
     );
-  }
-
-  @Deprecated
-  default URI getDownloadUrl(
-    final BuildEntity build,
-    final Download download
-  ) {
-    return this.getDownloadUrl(build.project(), build.version(), build, download);
   }
 
   URI getDownloadUrl(

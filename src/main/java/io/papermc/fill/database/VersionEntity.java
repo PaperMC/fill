@@ -28,8 +28,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DocumentReference;
 
 @CompoundIndex(def = "{'project': 1}")
+@CompoundIndex(def = "{'project': 1, 'createdAt': -1}")
 @CompoundIndex(def = "{'project': 1, 'family': 1}")
 @CompoundIndex(def = "{'project': 1, 'name': 1}", unique = true)
+@CompoundIndex(def = "{'family': 1}")
 @Document(collection = "versions")
 @NullMarked
 public class VersionEntity extends AbstractEntity implements Version {
@@ -42,8 +44,7 @@ public class VersionEntity extends AbstractEntity implements Version {
   private Support support;
   private @Nullable Java java;
   @Deprecated
-  @DocumentReference
-  private @Nullable BuildEntity mostRecentPromotedBuild;
+  private @Nullable ObjectId mostRecentPromotedBuild;
 
   public VersionEntity() {
   }
@@ -106,12 +107,12 @@ public class VersionEntity extends AbstractEntity implements Version {
   }
 
   @Deprecated
-  public @Nullable BuildEntity mostRecentPromotedBuild() {
+  public @Nullable ObjectId mostRecentPromotedBuild() {
     return this.mostRecentPromotedBuild;
   }
 
   @Deprecated
   public void setMostRecentPromotedBuild(final @Nullable BuildEntity mostRecentPromotedBuild) {
-    this.mostRecentPromotedBuild = mostRecentPromotedBuild;
+    this.mostRecentPromotedBuild = mostRecentPromotedBuild != null ? mostRecentPromotedBuild._id() : null;
   }
 }
