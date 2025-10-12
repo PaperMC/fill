@@ -4,11 +4,8 @@ scalar DateTime
 type Query {
   projects: [Project]
 
-  """
-  Look up a project by its id
-  """
   project(
-    id: String!
+    key: String!
   ): Project
 }
 
@@ -42,48 +39,86 @@ type Mutation {
   ): PromoteBuildPayload
 }
 
-type Project {
-  id: String!
+interface Node {
+  id: ID!
+}
+
+type PageInfo {
+  startCursor: String
+
+  endCursor: String
+
+  hasPreviousPage: Boolean!
+
+  hasNextPage: Boolean!
+}
+
+type Project implements Node {
+  id: ID!
+
+  key: String!
 
   name: String!
 
   families: [Family]
 
   family(
-    """
-    Family id.
-    """
-    id: String!
+    key: String!
   ): Family
 
   versions(
+    orderBy: VersionOrder
+
     """
     Filtering options for versions returned from the connection.
     """
     filterBy: VersionFilters
 
+    after: String
+
+    before: String
+
+    first: Int
+
     """
     Returns the last _n_ elements from the list.
     """
     last: Int
-  ): [Version]
+  ): VersionConnection
 
   version(
-    """
-    Version id.
-    """
-    id: String!
+    key: String!
   ): Version
 }
 
-type Family {
-  id: String!
+type Family implements Node {
+  id: ID!
+
+  key: String!
 
   java: Java!
 }
 
-type Version {
-  id: String!
+type VersionConnection {
+  edges: [VersionEdge]
+
+  nodes: [Version]
+
+  pageInfo: PageInfo!
+
+  totalCount: Int!
+}
+
+type VersionEdge {
+  node: Version
+
+  cursor: String!
+}
+
+type Version implements Node {
+  id: ID!
+
+  key: String!
 
   family: Family!
 
@@ -92,76 +127,58 @@ type Version {
   java: Java
 
   builds(
+    orderBy: BuildOrder
+
     """
     Filtering options for builds returned from the connection.
     """
     filterBy: BuildFilters
 
+    after: String
+
+    before: String
+
+    first: Int
+
     """
     Returns the last _n_ elements from the list.
     """
     last: Int
-  ): [Build]
+  ): BuildConnection
 }
 
 input VersionFilters {
-  familyId: String
+  familyKey: String
 
   supportStatus: SupportStatus
 }
 
-type Support {
-  status: SupportStatus!
-
-  end: Date
+input VersionOrder {
+  direction: OrderDirection
 }
 
-input SupportInput {
-  status: SupportStatus!
+type BuildConnection {
+  edges: [BuildEdge]
 
-  end: Date
+  nodes: [Build]
+
+  pageInfo: PageInfo!
+
+  totalCount: Int!
 }
 
-enum SupportStatus {
-  SUPPORTED
+type BuildEdge {
+  node: Build
 
-  DEPRECATED
-
-  UNSUPPORTED
+  cursor: String!
 }
 
-type Java {
-  version: JavaVersion!
+type Build implements Node {
+  id: ID!
 
-  flags: JavaFlags!
-}
+  number: Int!
 
-input JavaInput {
-  version: JavaVersionInput!
-
-  flags: JavaFlagsInput!
-}
-
-type JavaVersion {
-  minimum: Int!
-}
-
-input JavaVersionInput {
-  minimum: Int!
-}
-
-type JavaFlags {
-  recommended: [String!]!
-}
-
-input JavaFlagsInput {
-  recommended: [String!]!
-}
-
-type Build {
-  id: Int!
-
-  time: DateTime!
+  createdAt: DateTime!
 
   channel: BuildChannel!
 
@@ -170,15 +187,16 @@ type Build {
   downloads: [Download!]!
 
   download(
-    """
-    Download name.
-    """
-    name: String!
+    key: String!
   ): Download
 }
 
+input BuildOrder {
+  direction: OrderDirection
+}
+
 input BuildFilters {
-  channel: BuildChannel
+  channels: [BuildChannel]
 }
 
 enum BuildChannel {
@@ -211,10 +229,44 @@ type Download {
   url: String!
 }
 
+type Java {
+  version: JavaVersion!
+
+  flags: JavaFlags!
+}
+
+type JavaVersion {
+  minimum: Int!
+}
+
+type JavaFlags {
+  recommended: [String!]!
+}
+
+enum OrderDirection {
+  ASC
+
+  DESC
+}
+
+type Support {
+  status: SupportStatus!
+
+  end: Date
+}
+
+enum SupportStatus {
+  SUPPORTED
+
+  DEPRECATED
+
+  UNSUPPORTED
+}
+
 input CreateFamilyInput {
   project: String!
 
-  id: String!
+  key: String!
 
   java: JavaInput!
 }
@@ -222,7 +274,7 @@ input CreateFamilyInput {
 input UpdateFamilyInput {
   project: String!
 
-  id: String!
+  key: String!
 
   java: JavaInput
 }
@@ -230,20 +282,14 @@ input UpdateFamilyInput {
 input DeleteFamilyInput {
   project: String!
 
-  id: String!
+  key: String!
 }
 
 type CreateFamilyPayload {
-  """
-  The new family.
-  """
   family: Family
 }
 
 type UpdateFamilyPayload {
-  """
-  The family.
-  """
   family: Family
 }
 
@@ -256,7 +302,7 @@ input CreateVersionInput {
 
   family: String!
 
-  id: String!
+  key: String!
 
   java: JavaInput
 }
@@ -264,7 +310,7 @@ input CreateVersionInput {
 input UpdateVersionInput {
   project: String!
 
-  id: String!
+  key: String!
 
   support: SupportInput
 
@@ -274,20 +320,14 @@ input UpdateVersionInput {
 input DeleteVersionInput {
   project: String!
 
-  id: String!
+  key: String!
 }
 
 type CreateVersionPayload {
-  """
-  The new version.
-  """
   version: Version
 }
 
 type UpdateVersionPayload {
-  """
-  The version.
-  """
   version: Version
 }
 
@@ -300,9 +340,31 @@ input PromoteBuildInput {
 
   version: String!
 
-  id: Int!
+  number: Int!
 }
 
 type PromoteBuildPayload {
   version: Version!
+
+  build: Build!
+}
+
+input JavaInput {
+  version: JavaVersionInput!
+
+  flags: JavaFlagsInput!
+}
+
+input JavaFlagsInput {
+  recommended: [String!]!
+}
+
+input JavaVersionInput {
+  minimum: Int!
+}
+
+input SupportInput {
+  status: SupportStatus!
+
+  end: Date
 }

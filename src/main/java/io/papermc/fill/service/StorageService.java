@@ -58,9 +58,9 @@ public interface StorageService {
     return StringSubstitutor.replace(
       template,
       Map.of(
-        PROJECT_NAME, project.id(),
-        VERSION_NAME, version.id(),
-        BUILD_NUMBER, build.id(),
+        PROJECT_NAME, project.key(),
+        VERSION_NAME, version.key(),
+        BUILD_NUMBER, build.number(),
         DOWNLOAD_FILENAME, download.name(),
         DOWNLOAD_SHA256, download.checksums().sha256()
       )

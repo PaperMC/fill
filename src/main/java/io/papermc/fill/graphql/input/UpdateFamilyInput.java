@@ -22,7 +22,7 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public record UpdateFamilyInput(
   String project,
-  String id,
+  String key,
   @Nullable Java java
 ) {
 }

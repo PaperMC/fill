@@ -15,11 +15,18 @@
  */
 package io.papermc.fill.exception;
 
+import graphql.ErrorClassification;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.graphql.execution.ErrorType;
 
 @NullMarked
 public class VersionInUseException extends AppException {
   public VersionInUseException(final String message) {
     super(message);
+  }
+
+  @Override
+  public ErrorClassification getGraphErrorClassification() {
+    return ErrorType.BAD_REQUEST;
   }
 }

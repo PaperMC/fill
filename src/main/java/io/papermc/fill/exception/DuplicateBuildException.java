@@ -15,11 +15,18 @@
  */
 package io.papermc.fill.exception;
 
+import graphql.ErrorClassification;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.graphql.execution.ErrorType;
 
 @NullMarked
 public class DuplicateBuildException extends AppException {
   public DuplicateBuildException() {
     super("A build with the specified name already exists for this version.");
+  }
+
+  @Override
+  public ErrorClassification getGraphErrorClassification() {
+    return ErrorType.BAD_REQUEST;
   }
 }

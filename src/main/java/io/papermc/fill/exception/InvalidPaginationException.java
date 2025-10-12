@@ -16,20 +16,17 @@
 package io.papermc.fill.exception;
 
 import graphql.ErrorClassification;
+import io.papermc.fill.graphql.GraphError;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public abstract class AppException extends RuntimeException {
-  public AppException(final String message) {
+public class InvalidPaginationException extends AppException {
+  public InvalidPaginationException(final String message) {
     super(message);
   }
 
-  public AppException(final String message, final Throwable cause) {
-    super(message, cause);
-  }
-
-  public @Nullable ErrorClassification getGraphErrorClassification() {
-    return null;
+  @Override
+  public ErrorClassification getGraphErrorClassification() {
+    return GraphError.INVALID_PAGINATION;
   }
 }

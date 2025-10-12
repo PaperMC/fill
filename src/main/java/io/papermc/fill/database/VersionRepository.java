@@ -28,16 +28,28 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface VersionRepository extends MongoRepository<VersionEntity, ObjectId> {
   default Stream<VersionEntity> findAllByProject(final ProjectEntity project) {
-    return this.findAllByProject(project, Pageable.unpaged());
+    return this.findAllByProject(project._id(), Pageable.unpaged());
   }
 
   @Query(sort = "{'createdAt': -1}")
-  Stream<VersionEntity> findAllByProject(final ProjectEntity project, final Pageable pageable);
+  Stream<VersionEntity> findAllByProject(final ObjectId project, final Pageable pageable);
 
-  Optional<VersionEntity> findByProjectAndName(
+  default Optional<VersionEntity> findByProjectAndKey(
     final ProjectEntity project,
-    final String name
+    final String key
+  ) {
+    return this.findByProjectAndKey(project._id(), key);
+  }
+
+  Optional<VersionEntity> findByProjectAndKey(
+    final ObjectId project,
+    final String key
   );
 
-  Stream<VersionEntity> findAllByFamily(final FamilyEntity family);
+  default Stream<VersionEntity> findAllByFamily(final FamilyEntity family) {
+    return this.findAllByFamily(family._id());
+  }
+
+  @Query(sort = "{'createdAt': -1}")
+  Stream<VersionEntity> findAllByFamily(final ObjectId family);
 }

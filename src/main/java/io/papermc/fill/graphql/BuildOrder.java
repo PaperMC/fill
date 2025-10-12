@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.database;
+package io.papermc.fill.graphql;
 
-import org.bson.types.ObjectId;
+import io.papermc.fill.model.OrderDirection;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public record BuildIdentity(
-  ObjectId _id,
-  ObjectId version,
-  int number
+public record BuildOrder(
+  OrderDirection direction
 ) {
 }

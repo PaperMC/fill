@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.graphql.input;
+package io.papermc.fill.graphql;
 
-import io.papermc.fill.model.SupportStatus;
+import java.util.List;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public record VersionFilters(
-  @Nullable String familyId,
-  @Nullable SupportStatus supportStatus
+public record Connection<T>(
+  List<Edge<T>> edges,
+  List<T> nodes,
+  PageInfo pageInfo,
+  int totalCount
 ) {
 }

@@ -15,11 +15,18 @@
  */
 package io.papermc.fill.exception;
 
+import graphql.ErrorClassification;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.graphql.execution.ErrorType;
 
 @NullMarked
 public class BuildNotFoundException extends AppException {
   public BuildNotFoundException() {
     super("No build was found with the given identifier.");
+  }
+
+  @Override
+  public ErrorClassification getGraphErrorClassification() {
+    return ErrorType.NOT_FOUND;
   }
 }

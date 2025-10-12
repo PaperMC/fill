@@ -20,6 +20,6 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public record DeleteVersionInput(
   String project,
-  String id
+  String key
 ) {
 }

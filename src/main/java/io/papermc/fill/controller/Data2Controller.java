@@ -73,18 +73,18 @@ public class Data2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/versions/{version:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}/builds/{build:\\d+}/downloads/{download:[a-zA-Z0-9._-]+}")
   public ResponseEntity<?> getDownload(
     @PathVariable("project")
-    final String projectId,
+    final String projectKey,
     @PathVariable("version")
-    final String versionId,
+    final String versionKey,
     @PathVariable("build")
     @PositiveOrZero
-    final int buildId,
+    final int buildNumber,
     @PathVariable("download")
     final String downloadName
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
-    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(BuildNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
+    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildNumber).orElseThrow(BuildNotFoundException::new);
 
     final Download download = build.getDownloadByName(downloadName);
     if (download != null) {

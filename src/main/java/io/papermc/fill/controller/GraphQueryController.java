@@ -23,10 +23,18 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
-import io.papermc.fill.graphql.input.BuildFilters;
-import io.papermc.fill.graphql.input.VersionFilters;
+import io.papermc.fill.exception.FamilyNotFoundException;
+import io.papermc.fill.exception.ProjectNotFoundException;
+import io.papermc.fill.graphql.BuildFilters;
+import io.papermc.fill.graphql.BuildOrder;
+import io.papermc.fill.graphql.Connection;
+import io.papermc.fill.graphql.VersionFilters;
+import io.papermc.fill.graphql.VersionOrder;
+import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
-import io.papermc.fill.model.Download;
+import io.papermc.fill.model.BuildWithDownloads;
+import io.papermc.fill.model.BuildWithDownloadsImpl;
+import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.DownloadWithUrl;
 import io.papermc.fill.model.Family;
 import io.papermc.fill.model.Java;
@@ -35,8 +43,15 @@ import io.papermc.fill.model.Support;
 import io.papermc.fill.model.SupportStatus;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.service.StorageService;
+import io.papermc.fill.util.Downloads;
+import io.papermc.fill.util.graphql.CursorCodec;
+import io.papermc.fill.util.graphql.CursorPaginator;
+import java.net.URI;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -52,6 +67,19 @@ import org.springframework.stereotype.Controller;
 @Controller
 @NullMarked
 public class GraphQueryController {
+  private static final CursorPaginator<Instant, VersionEntity> VERSION_PAGINATOR = new CursorPaginator<>(
+    "versions",
+    VersionEntity::createdAt,
+    CursorCodec.INSTANT,
+    Comparator.naturalOrder()
+  );
+  private static final CursorPaginator<Integer, BuildWithDownloads<DownloadWithUrl>> BUILD_PAGINATOR = new CursorPaginator<>(
+    "builds",
+    Build::number,
+    CursorCodec.INT,
+    Comparator.naturalOrder()
+  );
+
   private final ProjectRepository projects;
   private final FamilyRepository families;
   private final VersionRepository versions;
@@ -78,21 +106,26 @@ public class GraphQueryController {
   public List<ProjectEntity> getProjects() {
     return this.projects.findAll()
       .stream()
-      .sorted(Project.COMPARATOR_ID)
+      .sorted(Project.COMPARATOR_KEY)
       .toList();
   }
 
   @QueryMapping("project")
   public Optional<ProjectEntity> getProject(
     @Argument
-    final String id
+    final String key
   ) {
-    return this.projects.findByName(id);
+    return this.projects.findByKey(key);
   }
 
   @SchemaMapping(typeName = "Project", field = "id")
   public String mapProjectId(final ProjectEntity project) {
     return project.id();
+  }
+
+  @SchemaMapping(typeName = "Project", field = "key")
+  public String mapProjectKey(final ProjectEntity project) {
+    return project.key();
   }
 
   @SchemaMapping(typeName = "Project", field = "name")
@@ -113,14 +146,19 @@ public class GraphQueryController {
   public @Nullable FamilyEntity mapProjectFamily(
     final ProjectEntity project,
     @Argument
-    final String id
+    final String key
   ) {
-    return this.families.findByProjectAndName(project, id).orElse(null);
+    return this.families.findByProjectAndKey(project, key).orElse(null);
   }
 
   @SchemaMapping(typeName = "Family", field = "id")
   public String mapFamilyId(final FamilyEntity family) {
     return family.id();
+  }
+
+  @SchemaMapping(typeName = "Family", field = "key")
+  public String mapFamilyKey(final FamilyEntity family) {
+    return family.key();
   }
 
   @SchemaMapping(typeName = "Family", field = "java")
@@ -129,37 +167,52 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Project", field = "versions")
-  public List<VersionEntity> mapProjectVersions(
+  public Connection<VersionEntity> mapProjectVersions(
     final ProjectEntity project,
     @Argument
+    final @Nullable VersionOrder orderBy,
+    @Argument
     final @Nullable VersionFilters filterBy,
+    @Argument
+    final @Nullable String after,
+    @Argument
+    final @Nullable String before,
+    @Argument
+    final @Nullable Integer first,
     @Argument
     final @Nullable Integer last
   ) {
     Stream<VersionEntity> versions = this.versions.findAllByProject(project);
     if (filterBy != null) {
-      final String filterByFamilyId = filterBy.familyId();
-      if (filterByFamilyId != null) {
-        versions = versions.filter(version -> version.family().id().equals(filterByFamilyId));
+      final String filterByFamilyKey = filterBy.familyKey();
+      if (filterByFamilyKey != null) {
+        versions = versions.filter(version -> {
+          final FamilyEntity family = this.families.findById(version.family()).orElseThrow(FamilyNotFoundException::new);
+          return family.key().equals(filterByFamilyKey);
+        });
       }
       final SupportStatus filterBySupportStatus = filterBy.supportStatus();
       if (filterBySupportStatus != null) {
         versions = versions.filter(Version.isSupportStatus(filterBySupportStatus));
       }
     }
-    if (last != null) {
-      versions = versions.limit(last);
-    }
-    return versions.toList();
+    return VERSION_PAGINATOR.paginate(
+      versions,
+      orderBy != null ? orderBy.direction() : null,
+      after,
+      before,
+      first,
+      last
+    );
   }
 
   @SchemaMapping(typeName = "Project", field = "version")
   public @Nullable VersionEntity mapProjectVersion(
     final ProjectEntity project,
     @Argument
-    final String id
+    final String key
   ) {
-    return this.versions.findByProjectAndName(project, id).orElse(null);
+    return this.versions.findByProjectAndKey(project, key).orElse(null);
   }
 
   @SchemaMapping(typeName = "Version", field = "id")
@@ -167,9 +220,14 @@ public class GraphQueryController {
     return version.id();
   }
 
+  @SchemaMapping(typeName = "Version", field = "key")
+  public String mapVersionKey(final VersionEntity version) {
+    return version.key();
+  }
+
   @SchemaMapping(typeName = "Version", field = "family")
   public FamilyEntity mapVersionFamily(final VersionEntity version) {
-    return version.family();
+    return this.families.findById(version.family()).orElseThrow(FamilyNotFoundException::new);
   }
 
   @SchemaMapping(typeName = "Version", field = "support")
@@ -183,56 +241,79 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Version", field = "builds")
-  public List<BuildEntity> mapVersionBuilds(
+  public Connection<BuildWithDownloads<DownloadWithUrl>> mapVersionBuilds(
     final VersionEntity version,
+    @Argument
+    final @Nullable BuildOrder orderBy,
     @Argument
     final @Nullable BuildFilters filterBy,
     @Argument
+    final @Nullable String after,
+    @Argument
+    final @Nullable String before,
+    @Argument
+    final @Nullable Integer first,
+    @Argument
     final @Nullable Integer last
   ) {
+    final ProjectEntity project = this.projects.findById(version.project()).orElseThrow(ProjectNotFoundException::new);
     final Pageable pageable = last != null ? Pageable.ofSize(last) : Pageable.unpaged();
     final Stream<BuildEntity> builds;
     if (filterBy != null) {
-      final BuildChannel filterByChannel = filterBy.channel();
-      builds = this.builds.findByVersionAndOptionalChannel(version, filterByChannel, pageable);
+      final List<BuildChannel> filterByChannels = filterBy.channels();
+      builds = this.builds.findByVersionAndOptionalChannelIn(version, filterByChannels, pageable);
     } else {
       builds = this.builds.findAllByVersion(version, pageable);
     }
-    return builds.toList();
+    return BUILD_PAGINATOR.paginate(
+      builds.map(build -> new BuildWithDownloadsImpl<>(build, Downloads.map(build.downloads(), download -> {
+        final URI url = this.storage.getDownloadUrl(project, version, build, download);
+        return download.withUrl(url);
+      }))),
+      orderBy != null ? orderBy.direction() : null,
+      after,
+      before,
+      first,
+      last
+    );
   }
 
   @SchemaMapping(typeName = "Build", field = "id")
-  public int mapBuildId(final BuildEntity build) {
+  public String mapBuildId(final BuildWithDownloads<DownloadWithUrl> build) {
     return build.id();
   }
 
-  @SchemaMapping(typeName = "Build", field = "time")
-  public ZonedDateTime mapBuildTime(final BuildEntity build) {
+  @SchemaMapping(typeName = "Build", field = "number")
+  public int mapBuildNumber(final BuildWithDownloads<DownloadWithUrl> build) {
+    return build.number();
+  }
+
+  @SchemaMapping(typeName = "Build", field = "createdAt")
+  public ZonedDateTime mapBuildCreatedAt(final BuildWithDownloads<DownloadWithUrl> build) {
     return build.createdAt().atZone(ZoneOffset.UTC);
   }
 
   @SchemaMapping(typeName = "Build", field = "channel")
-  public BuildChannel mapBuildChannel(final BuildEntity build) {
+  public BuildChannel mapBuildChannel(final BuildWithDownloads<DownloadWithUrl> build) {
     return build.channel();
   }
 
+  @SchemaMapping(typeName = "Build", field = "commits")
+  public List<Commit> mapBuildCommits(final BuildWithDownloads<DownloadWithUrl> build) {
+    return build.commits();
+  }
+
   @SchemaMapping(typeName = "Build", field = "downloads")
-  public List<DownloadWithUrl> mapBuildDownloads(final BuildEntity build) {
-    return build.downloads().values()
-      .stream()
-      .map(download -> download.withUrl(this.storage.getDownloadUrl(build.project(), build.version(), build, download)))
-      .toList();
+  public Collection<DownloadWithUrl> mapBuildDownloads(final BuildWithDownloads<DownloadWithUrl> build) {
+    return build.downloads().values();
   }
 
   @SchemaMapping(typeName = "Build", field = "download")
   public @Nullable DownloadWithUrl mapBuildDownload(
-    final BuildEntity build,
+    final BuildWithDownloads<DownloadWithUrl> build,
     @Argument
-    final String name
+    final String key
   ) {
-    final Download download = build.getDownloadByKey(name);
-    return download != null
-      ? download.withUrl(this.storage.getDownloadUrl(build.project(), build.version(), build, download))
-      : null;
+    return build.getDownloadByKey(key);
   }
 }

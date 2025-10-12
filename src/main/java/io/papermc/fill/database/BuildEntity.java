@@ -28,8 +28,6 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.DocumentReference;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 @CompoundIndex(def = "{'project': 1}")
 @CompoundIndex(def = "{'version': 1}")
@@ -39,11 +37,8 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @Document(collection = "builds")
 @NullMarked
 public class BuildEntity extends AbstractEntity implements BuildWithDownloads<Download> {
-  @DocumentReference
-  private ProjectEntity project;
-  @DocumentReference
-  private VersionEntity version;
-  @Field("number")
+  private ObjectId project;
+  private ObjectId version;
   private int number;
   private BuildChannel channel;
   @Deprecated
@@ -67,8 +62,8 @@ public class BuildEntity extends AbstractEntity implements BuildWithDownloads<Do
     final BuildEntity entity = new BuildEntity();
     entity._id = _id;
     entity.createdAt = createdAt;
-    entity.project = project;
-    entity.version = version;
+    entity.project = project._id();
+    entity.version = version._id();
     entity.number = number;
     entity.channel = channel;
     entity.commits = commits;
@@ -76,16 +71,21 @@ public class BuildEntity extends AbstractEntity implements BuildWithDownloads<Do
     return entity;
   }
 
-  public ProjectEntity project() {
+  public ObjectId project() {
     return this.project;
   }
 
-  public VersionEntity version() {
+  public ObjectId version() {
     return this.version;
   }
 
   @Override
-  public int id() {
+  public String id() {
+    return this._id.toHexString();
+  }
+
+  @Override
+  public int number() {
     return this.number;
   }
 

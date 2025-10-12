@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.exception;
+package io.papermc.fill.model;
 
-import graphql.ErrorClassification;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public abstract class AppException extends RuntimeException {
-  public AppException(final String message) {
-    super(message);
-  }
-
-  public AppException(final String message, final Throwable cause) {
-    super(message, cause);
-  }
-
-  public @Nullable ErrorClassification getGraphErrorClassification() {
-    return null;
+public record BuildWithDownloadsImpl<D extends AbstractDownload>(
+  String id,
+  int number,
+  Instant createdAt,
+  Instant updatedAt,
+  BuildChannel channel,
+  List<Commit> commits,
+  Map<String, D> downloads
+) implements BuildWithDownloads<D> {
+  public BuildWithDownloadsImpl(final BuildWithDownloads<?> that, final Map<String, D> downloads) {
+    this(that.id(), that.number(), that.createdAt(), that.updatedAt(), that.channel(), that.commits(), downloads);
   }
 }

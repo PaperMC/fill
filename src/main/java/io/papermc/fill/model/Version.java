@@ -21,7 +21,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public interface Version extends Identified, Timestamped {
+public interface Version extends Identified, Keyed, Timestamped {
   Comparator<Version> COMPARATOR_CREATED_AT = Comparator.comparing(Version::createdAt);
   Comparator<Version> COMPARATOR_CREATED_AT_REVERSE = COMPARATOR_CREATED_AT.reversed();
 

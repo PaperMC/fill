@@ -22,11 +22,11 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public interface Build extends Timestamped {
-  Comparator<Build> COMPARATOR_ID = Comparator.comparing(Build::id);
-  Comparator<Build> COMPARATOR_ID_REVERSE = COMPARATOR_ID.reversed();
+public interface Build extends Identified, Timestamped {
+  Comparator<Build> COMPARATOR_NUMBER = Comparator.comparing(Build::number);
+  Comparator<Build> COMPARATOR_NUMBER_REVERSE = COMPARATOR_NUMBER.reversed();
 
-  int id();
+  int number();
 
   BuildChannel channel();
 

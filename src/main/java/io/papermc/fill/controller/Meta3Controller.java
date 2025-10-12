@@ -18,13 +18,15 @@ package io.papermc.fill.controller;
 import com.google.common.collect.Lists;
 import io.papermc.fill.database.AbstractEntity;
 import io.papermc.fill.database.BuildEntity;
-import io.papermc.fill.database.BuildIdentity;
 import io.papermc.fill.database.BuildRepository;
+import io.papermc.fill.database.FamilyEntity;
+import io.papermc.fill.database.FamilyRepository;
 import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
 import io.papermc.fill.exception.BuildNotFoundException;
+import io.papermc.fill.exception.FamilyNotFoundException;
 import io.papermc.fill.exception.ProjectNotFoundException;
 import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.model.BuildChannel;
@@ -59,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
@@ -87,6 +90,7 @@ public class Meta3Controller {
   private static final Duration CACHE_LENGTH_BUILD_LATEST = Duration.ofMinutes(5);
 
   private final ProjectRepository projects;
+  private final FamilyRepository families;
   private final VersionRepository versions;
   private final BuildRepository builds;
 
@@ -95,11 +99,13 @@ public class Meta3Controller {
   @Autowired
   public Meta3Controller(
     final ProjectRepository projects,
+    final FamilyRepository families,
     final VersionRepository versions,
     final BuildRepository builds,
     final StorageService storage
   ) {
     this.projects = projects;
+    this.families = families;
     this.versions = versions;
     this.builds = builds;
     this.storage = storage;
@@ -129,7 +135,7 @@ public class Meta3Controller {
   public ResponseEntity<?> getProjects() {
     final List<ProjectEntity> projects = this.projects.findAll()
       .stream()
-      .sorted(Project.COMPARATOR_ID)
+      .sorted(Project.COMPARATOR_KEY)
       .toList();
     final ProjectsResponse response = new ProjectsResponse(
       Lists.transform(projects, this::createProjectResponse)
@@ -159,11 +165,11 @@ public class Meta3Controller {
     summary = "Get details of a specific project"
   )
   public ResponseEntity<?> getProject(
-    @Parameter(description = "The id of the project")
+    @Parameter(description = "The key of the project")
     @PathVariable("project")
-    final String projectId
+    final String projectKey
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
     final ProjectResponse response = this.createProjectResponse(project);
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_PROJECT));
   }
@@ -192,18 +198,18 @@ public class Meta3Controller {
     summary = "Get a list of versions for a specific project"
   )
   public ResponseEntity<?> getVersions(
-    @Parameter(description = "The id of the project")
+    @Parameter(description = "The key of the project")
     @PathVariable("project")
-    final String projectId
+    final String projectKey
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
     final List<VersionEntity> versions = this.versions.findAllByProject(project).toList();
     final List<ObjectId> versionIds = versions.stream().map(AbstractEntity::_id).toList();
-    final Map<ObjectId, List<BuildIdentity>> buildsByVersion = this.builds.findAllIdentitiesByVersionIn(versionIds)
-      .collect(Collectors.groupingBy(BuildIdentity::version));
+    final Map<ObjectId, List<BuildEntity>> buildsByVersion = this.builds.findAllByVersionIn(versionIds)
+      .collect(Collectors.groupingBy(BuildEntity::version));
     final VersionsResponse response = new VersionsResponse(
       Lists.transform(versions, version -> {
-        final List<BuildIdentity> buildsIn = buildsByVersion.getOrDefault(version._id(), List.of());
+        final List<BuildEntity> buildsIn = buildsByVersion.getOrDefault(version._id(), List.of());
         return this.createVersionResponse(version, buildsIn);
       })
     );
@@ -232,16 +238,16 @@ public class Meta3Controller {
     summary = "Get details of a specific version for a project"
   )
   public ResponseEntity<?> getVersion(
-    @Parameter(description = "The id of the project")
+    @Parameter(description = "The key of the project")
     @PathVariable("project")
-    final String projectId,
-    @Parameter(description = "The id of the version")
+    final String projectKey,
+    @Parameter(description = "The key of the version")
     @PathVariable("version")
-    final String versionId
+    final String versionKey
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
-    final List<BuildIdentity> builds = this.builds.findAllIdentitiesByVersion(version).toList();
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
+    final List<BuildEntity> builds = this.builds.findAllByVersion(version).toList();
     final VersionResponse response = this.createVersionResponse(version, builds);
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_VERSION));
   }
@@ -270,19 +276,19 @@ public class Meta3Controller {
     summary = "Get a list of builds for a specific version of a project"
   )
   public ResponseEntity<?> getBuilds(
-    @Parameter(description = "The id of the project")
+    @Parameter(description = "The key of the project")
     @PathVariable("project")
-    final String projectId,
-    @Parameter(description = "The id of the version")
+    final String projectKey,
+    @Parameter(description = "The key of the version")
     @PathVariable("version")
-    final String versionId,
-    @Parameter(in = ParameterIn.QUERY, description = "Filter builds by channel")
+    final String versionKey,
+    @Parameter(in = ParameterIn.QUERY, description = "Filter builds by one or more channels")
     @RequestParam(name = "channel", required = false)
-    final @Nullable BuildChannel filterByChannel
+    final @Nullable List<BuildChannel> filterByChannel
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
-    final List<BuildEntity> builds = this.builds.findByVersionAndOptionalChannel(version, filterByChannel, Pageable.unpaged()).toList();
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
+    final List<BuildEntity> builds = this.builds.findByVersionAndOptionalChannelIn(version, filterByChannel, Pageable.unpaged()).toList();
     final List<BuildResponse> response = builds.stream()
       .map(build -> this.createBuildResponse(project, version, build))
       .toList();
@@ -311,20 +317,20 @@ public class Meta3Controller {
     summary = "Get details of a specific build for a version of a project"
   )
   public ResponseEntity<?> getBuild(
-    @Parameter(description = "The id of the project")
+    @Parameter(description = "The key of the project")
     @PathVariable("project")
-    final String projectId,
-    @Parameter(description = "The id of the version")
+    final String projectKey,
+    @Parameter(description = "The key of the version")
     @PathVariable("version")
-    final String versionId,
-    @Parameter(description = "The id of the build")
+    final String versionKey,
+    @Parameter(description = "The number of the build")
     @PathVariable("build")
     @PositiveOrZero
-    final int buildId
+    final int buildNumber
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
-    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(BuildNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
+    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildNumber).orElseThrow(BuildNotFoundException::new);
     final BuildResponse response = this.createBuildResponse(project, version, build);
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_BUILD));
   }
@@ -351,15 +357,15 @@ public class Meta3Controller {
     summary = "Get details of the latest build for a version of a project"
   )
   public ResponseEntity<?> getLatestBuild(
-    @Parameter(description = "The id of the project")
+    @Parameter(description = "The key of the project")
     @PathVariable("project")
-    final String projectId,
-    @Parameter(description = "The id of the version")
+    final String projectKey,
+    @Parameter(description = "The key of the version")
     @PathVariable("version")
-    final String versionId
+    final String versionKey
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
     final List<BuildEntity> builds = this.builds.findAllByVersion(version).toList();
     if (builds.isEmpty()) {
       throw new BuildNotFoundException();
@@ -371,9 +377,14 @@ public class Meta3Controller {
   }
 
   private ProjectResponse createProjectResponse(final ProjectEntity project) {
+    final Map<ObjectId, FamilyEntity> families = this.families.findAllByProject(project)
+      .collect(Collectors.toMap(
+        AbstractEntity::_id,
+        Function.identity()
+      ));
     final Map<String, List<String>> versions = this.versions.findAllByProject(project)
       .collect(Collectors.groupingBy(
-        VersionEntity::family,
+        version -> families.get(version.family()),
         () -> new TreeMap<>(Family.COMPARATOR_CREATED_AT_REVERSE),
         Collectors.collectingAndThen(
           Collectors.toList(),
@@ -386,28 +397,31 @@ public class Meta3Controller {
       .entrySet()
       .stream()
       .collect(Collectors.toMap(
-        e -> e.getKey().id(),
-        e -> e.getValue().stream().map(VersionEntity::id).toList(),
+        e -> e.getKey().key(),
+        e -> e.getValue().stream().map(VersionEntity::key).toList(),
         (a, b) -> b,
         LinkedHashMap::new
       ));
     return new ProjectResponse(
       new ProjectResponse.Project(
-        project.id(),
+        project.key(),
         project.name()
       ),
       versions
     );
   }
 
-  private VersionResponse createVersionResponse(final VersionEntity version, final List<BuildIdentity> builds) {
+  private VersionResponse createVersionResponse(final VersionEntity version, final List<BuildEntity> builds) {
     return new VersionResponse(
       new VersionResponse.Version(
-        version.id(),
+        version.key(),
         version.support(),
-        Objects.requireNonNullElse(version.java(), version.family().java())
+        Objects.requireNonNullElseGet(version.java(), () -> {
+          final FamilyEntity family = this.families.findById(version.family()).orElseThrow(FamilyNotFoundException::new);
+          return family.java();
+        })
       ),
-      Lists.transform(builds, BuildIdentity::number)
+      Lists.transform(builds, BuildEntity::number)
     );
   }
 
@@ -421,6 +435,6 @@ public class Meta3Controller {
         return Map.entry(entry.getKey(), downloadWithUrl);
       })
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    return new BuildResponse(build.id(), build.createdAt(), build.channel(), build.commits(), downloads);
+    return new BuildResponse(build.number(), build.createdAt(), build.channel(), build.commits(), downloads);
   }
 }

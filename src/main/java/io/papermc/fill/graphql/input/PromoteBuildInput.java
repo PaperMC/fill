@@ -21,6 +21,6 @@ import org.jspecify.annotations.NullMarked;
 public record PromoteBuildInput(
   String project,
   String version,
-  int id
+  int number
 ) {
 }

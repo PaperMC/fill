@@ -25,10 +25,21 @@ import org.springframework.stereotype.Repository;
 @NullMarked
 @Repository
 public interface FamilyRepository extends MongoRepository<FamilyEntity, ObjectId> {
-  Stream<FamilyEntity> findAllByProject(final ProjectEntity project);
+  default Stream<FamilyEntity> findAllByProject(final ProjectEntity project) {
+    return this.findAllByProject(project._id());
+  }
 
-  Optional<FamilyEntity> findByProjectAndName(
+  Stream<FamilyEntity> findAllByProject(final ObjectId project);
+
+  default Optional<FamilyEntity> findByProjectAndKey(
     final ProjectEntity project,
-    final String name
+    final String key
+  ) {
+    return this.findByProjectAndKey(project._id(), key);
+  }
+
+  Optional<FamilyEntity> findByProjectAndKey(
+    final ObjectId project,
+    final String key
   );
 }

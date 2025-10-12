@@ -17,6 +17,7 @@ package io.papermc.fill.database;
 
 import io.papermc.fill.model.BuildChannel;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.bson.types.ObjectId;
@@ -34,42 +35,57 @@ public interface BuildRepository extends MongoRepository<BuildEntity, ObjectId> 
     return this.findAllByVersion(version, Pageable.unpaged());
   }
 
+  default Stream<BuildEntity> findAllByVersion(
+    final VersionEntity version,
+    final Pageable pageable
+  ) {
+    return this.findAllByVersion(version._id(), pageable);
+  }
+
   @Query(sort = "{'number': -1}")
   Stream<BuildEntity> findAllByVersion(
-    final VersionEntity version,
+    final ObjectId version,
     final Pageable pageable
   );
+
+  default Stream<BuildEntity> findAllByVersionAndChannelIn(
+    final VersionEntity version,
+    final @Nullable List<BuildChannel> channel,
+    final Pageable pageable
+  ) {
+    return this.findAllByVersionAndChannelIn(version._id(), channel, pageable);
+  }
 
   @Query(sort = "{'number': -1}")
-  Stream<BuildEntity> findAllByVersionAndChannel(
-    final VersionEntity version,
-    final @Nullable BuildChannel channel,
+  Stream<BuildEntity> findAllByVersionAndChannelIn(
+    final ObjectId version,
+    final @Nullable List<BuildChannel> channel,
     final Pageable pageable
   );
 
-  default Stream<BuildEntity> findByVersionAndOptionalChannel(
+  default Stream<BuildEntity> findByVersionAndOptionalChannelIn(
     final VersionEntity version,
-    final @Nullable BuildChannel channel,
+    final @Nullable List<BuildChannel> channel,
     final Pageable pageable
   ) {
     if (channel != null) {
-      return this.findAllByVersionAndChannel(version, channel, pageable);
+      return this.findAllByVersionAndChannelIn(version, channel, pageable);
     } else {
       return this.findAllByVersion(version, pageable);
     }
   }
 
-  @Deprecated(forRemoval = true)
-  Stream<BuildEntity> findAllByVersionIn(final Collection<VersionEntity> version);
+  Stream<BuildEntity> findAllByVersionIn(final Collection<ObjectId> version);
 
-  Optional<BuildEntity> findByVersionAndNumber(
+  default Optional<BuildEntity> findByVersionAndNumber(
     final VersionEntity version,
     final int number
+  ) {
+    return this.findByVersionAndNumber(version._id(), number);
+  }
+
+  Optional<BuildEntity> findByVersionAndNumber(
+    final ObjectId version,
+    final int number
   );
-
-  @Query(sort = "{'number': -1}")
-  Stream<BuildIdentity> findAllIdentitiesByVersion(final VersionEntity version);
-
-  @Query(sort = "{'number': -1}")
-  Stream<BuildIdentity> findAllIdentitiesByVersionIn(final Collection<ObjectId> version);
 }

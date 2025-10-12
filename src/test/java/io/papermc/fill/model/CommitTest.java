@@ -24,9 +24,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @NullMarked
-class CommitTest {
+public class CommitTest {
   @Test
-  void testGetShortSha() {
+  public void testGetShortSha() {
     final Commit commit = new Commit("afa6c8b3a2fae95785dc7d9685a57835d703ac88", Instant.now(), "This is a test.");
     assertEquals("afa6c8b", Commit.getShortSha(commit));
   }
@@ -36,7 +36,7 @@ class CommitTest {
     "This is a test.\r\nA what?\r\nA test.\r\nA what?\r\nA test.\r\nOh, a test.",
     "This is a test.\n\nA what?\n\nA test.\n\nA what?\n\nA test.\n\nOh, a test."
   })
-  void testSummary(final String message) {
+  public void testSummary(final String message) {
     final Commit commit = new Commit("7aec9744ba1554e4d38febae4278e74a5e764414", Instant.now(), message);
     assertEquals("This is a test.", commit.summary());
   }

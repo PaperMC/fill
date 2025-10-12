@@ -85,15 +85,15 @@ public class GraphMutationController {
     @Argument
     final CreateFamilyInput input
   ) {
-    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
-    if (this.families.findByProjectAndName(project, input.id()).isPresent()) {
+    final ProjectEntity project = this.projects.findByKey(input.project()).orElseThrow(ProjectNotFoundException::new);
+    if (this.families.findByProjectAndKey(project, input.key()).isPresent()) {
       throw new DuplicateFamilyException();
     }
     final FamilyEntity entity = this.families.save(FamilyEntity.create(
       new ObjectId(),
       Instant.now(),
       project,
-      input.id(),
+      input.key(),
       input.java()
     ));
     return new CreateFamilyPayload(entity);
@@ -105,8 +105,8 @@ public class GraphMutationController {
     @Argument
     final UpdateFamilyInput input
   ) {
-    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
-    FamilyEntity family = this.families.findByProjectAndName(project, input.id()).orElseThrow(FamilyNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(input.project()).orElseThrow(ProjectNotFoundException::new);
+    FamilyEntity family = this.families.findByProjectAndKey(project, input.key()).orElseThrow(FamilyNotFoundException::new);
     final Java java = input.java();
     if (java != null) {
       family.setJava(java);
@@ -121,8 +121,8 @@ public class GraphMutationController {
     @Argument
     final DeleteFamilyInput input
   ) {
-    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
-    final FamilyEntity family = this.families.findByProjectAndName(project, input.id()).orElseThrow(FamilyNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(input.project()).orElseThrow(ProjectNotFoundException::new);
+    final FamilyEntity family = this.families.findByProjectAndKey(project, input.key()).orElseThrow(FamilyNotFoundException::new);
     if (this.versions.findAllByFamily(family).findAny().isPresent()) {
       throw new FamilyInUseException("Cannot delete this family because one or more versions are still associated with it.");
     }
@@ -135,9 +135,9 @@ public class GraphMutationController {
     @Argument
     final CreateVersionInput input
   ) {
-    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
-    final FamilyEntity family = this.families.findByProjectAndName(project, input.family()).orElseThrow(FamilyNotFoundException::new);
-    if (this.versions.findByProjectAndName(project, input.id()).isPresent()) {
+    final ProjectEntity project = this.projects.findByKey(input.project()).orElseThrow(ProjectNotFoundException::new);
+    final FamilyEntity family = this.families.findByProjectAndKey(project, input.family()).orElseThrow(FamilyNotFoundException::new);
+    if (this.versions.findByProjectAndKey(project, input.key()).isPresent()) {
       throw new DuplicateVersionException();
     }
     final VersionEntity entity = this.versions.save(VersionEntity.create(
@@ -145,7 +145,7 @@ public class GraphMutationController {
       Instant.now(),
       project,
       family,
-      input.id(),
+      input.key(),
       null,
       new Support(SupportStatus.SUPPORTED, null),
       input.java()
@@ -159,8 +159,8 @@ public class GraphMutationController {
     @Argument
     final UpdateVersionInput input
   ) {
-    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
-    VersionEntity version = this.versions.findByProjectAndName(project, input.id()).orElseThrow(VersionNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(input.project()).orElseThrow(ProjectNotFoundException::new);
+    VersionEntity version = this.versions.findByProjectAndKey(project, input.key()).orElseThrow(VersionNotFoundException::new);
     final Support newSupport = input.support();
     if (newSupport != null) {
       version.setSupport(newSupport);
@@ -176,8 +176,8 @@ public class GraphMutationController {
     @Argument
     final DeleteVersionInput input
   ) {
-    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, input.id()).orElseThrow(VersionNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(input.project()).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndKey(project, input.key()).orElseThrow(VersionNotFoundException::new);
     if (this.builds.findAllByVersion(version).findAny().isPresent()) {
       throw new VersionInUseException("Cannot delete this version because one or more builds are still associated with it.");
     }
@@ -190,9 +190,9 @@ public class GraphMutationController {
     @Argument
     final PromoteBuildInput input
   ) {
-    final ProjectEntity project = this.projects.findByName(input.project()).orElseThrow(ProjectNotFoundException::new);
-    VersionEntity version = this.versions.findByProjectAndName(project, input.version()).orElseThrow(VersionNotFoundException::new);
-    BuildEntity build = this.builds.findByVersionAndNumber(version, input.id()).orElseThrow(BuildNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(input.project()).orElseThrow(ProjectNotFoundException::new);
+    VersionEntity version = this.versions.findByProjectAndKey(project, input.version()).orElseThrow(VersionNotFoundException::new);
+    BuildEntity build = this.builds.findByVersionAndNumber(version, input.number()).orElseThrow(BuildNotFoundException::new);
 
     build.setChannel(BuildChannel.RECOMMENDED);
     build = this.builds.save(build);
@@ -200,6 +200,6 @@ public class GraphMutationController {
     version.setMostRecentPromotedBuild(build);
     version = this.versions.save(version);
 
-    return new PromoteBuildPayload(version);
+    return new PromoteBuildPayload(version, build);
   }
 }

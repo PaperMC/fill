@@ -23,7 +23,7 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public record UpdateVersionInput(
   String project,
-  String id,
+  String key,
   @Nullable Support support,
   @Nullable Java java
 ) {

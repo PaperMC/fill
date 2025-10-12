@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.graphql.input;
+package io.papermc.fill.model;
 
-import io.papermc.fill.model.BuildChannel;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public record BuildFilters(
-  @Nullable BuildChannel channel
-) {
+public enum OrderDirection {
+  ASC,
+  DESC,
 }

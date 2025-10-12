@@ -113,9 +113,9 @@ public class DiscordNotifier implements BuildPublishListener {
           List.of(
             TextDisplay.of(String.format(
               "# Build %d for %s %s",
-              build.id(),
+              build.number(),
               project.name(),
-              version.id()
+              version.key()
             )),
             TextDisplay.of(String.format(
               "**Channel**: %s",
@@ -169,7 +169,7 @@ public class DiscordNotifier implements BuildPublishListener {
 
   private @Nullable Button createDiffButton(final VersionEntity version, final GitRepository repository, final BuildWithDownloads<Download> build) {
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
-      .sorted(Build.COMPARATOR_ID)
+      .sorted(Build.COMPARATOR_NUMBER)
       .toList();
     final Build buildBefore = getBuildBefore(builds);
     if (buildBefore != null && !buildBefore.commits().isEmpty() && !build.commits().isEmpty()) {

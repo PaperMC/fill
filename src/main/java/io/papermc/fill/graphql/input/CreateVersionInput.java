@@ -22,7 +22,7 @@ import org.jspecify.annotations.NullMarked;
 public record CreateVersionInput(
   String project,
   String family,
-  String id,
+  String key,
   Java java
 ) {
 }

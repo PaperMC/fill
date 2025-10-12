@@ -15,20 +15,11 @@
  */
 package io.papermc.fill.controller.advice;
 
+import graphql.ErrorClassification;
 import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
 import graphql.schema.DataFetchingEnvironment;
 import io.papermc.fill.exception.AppException;
-import io.papermc.fill.exception.BuildNotFoundException;
-import io.papermc.fill.exception.DownloadNotFoundException;
-import io.papermc.fill.exception.DuplicateBuildException;
-import io.papermc.fill.exception.DuplicateFamilyException;
-import io.papermc.fill.exception.DuplicateVersionException;
-import io.papermc.fill.exception.FamilyInUseException;
-import io.papermc.fill.exception.FamilyNotFoundException;
-import io.papermc.fill.exception.ProjectNotFoundException;
-import io.papermc.fill.exception.VersionInUseException;
-import io.papermc.fill.exception.VersionNotFoundException;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.graphql.data.method.annotation.GraphQlExceptionHandler;
 import org.springframework.graphql.execution.ErrorType;
@@ -38,33 +29,15 @@ import reactor.core.publisher.Mono;
 @ControllerAdvice
 @NullMarked
 public class ExceptionControllerAdvice {
-  @GraphQlExceptionHandler({
-    BuildNotFoundException.class,
-    DownloadNotFoundException.class,
-    FamilyNotFoundException.class,
-    ProjectNotFoundException.class,
-    VersionNotFoundException.class
-  })
-  public Mono<GraphQLError> onNotFound(final AppException exception, final DataFetchingEnvironment environment) {
+  @GraphQlExceptionHandler(AppException.class)
+  public Mono<GraphQLError> on(final AppException exception, final DataFetchingEnvironment environment) {
+    ErrorClassification classification = exception.getGraphErrorClassification();
+    if (classification == null) {
+      classification = ErrorType.BAD_REQUEST;
+    }
     return Mono.just(
       GraphqlErrorBuilder.newError(environment)
-        .errorType(ErrorType.NOT_FOUND)
-        .message(exception.getMessage())
-        .build()
-    );
-  }
-
-  @GraphQlExceptionHandler({
-    DuplicateBuildException.class,
-    DuplicateFamilyException.class,
-    FamilyInUseException.class,
-    DuplicateVersionException.class,
-    VersionInUseException.class
-  })
-  public Mono<GraphQLError> onBadRequest(final AppException exception, final DataFetchingEnvironment environment) {
-    return Mono.just(
-      GraphqlErrorBuilder.newError(environment)
-        .errorType(ErrorType.BAD_REQUEST)
+        .errorType(classification)
         .message(exception.getMessage())
         .build()
     );

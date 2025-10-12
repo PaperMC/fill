@@ -146,8 +146,8 @@ public class PublishController {
       this.instances.invalidate(request.id());
     }
 
-    final ProjectEntity project = this.projects.findByName(request.project()).orElseThrow(ProjectNotFoundException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, request.version()).orElseThrow(VersionNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(request.project()).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndKey(project, request.version()).orElseThrow(VersionNotFoundException::new);
 
     if (this.builds.findByVersionAndNumber(version, request.build()).isPresent()) {
       throw createPublishFailedException(request, "Build already exists", new DuplicateBuildException());

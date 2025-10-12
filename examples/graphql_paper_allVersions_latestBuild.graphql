@@ -12,14 +12,20 @@ query {
   project(key: "paper") {
     id
     key
-    versions(filterBy: {supportStatus: SUPPORTED}, orderBy: {direction: DESC}, first: 1) {
+    versions(orderBy: {direction: DESC}, first: 100) {
       edges {
         node {
-          id
           key
-          support {
-            status
-            end
+          family {
+            key
+            java {
+              version {
+                minimum
+              }
+              flags {
+                recommended
+              }
+            }
           }
           java {
             version {
@@ -32,16 +38,10 @@ query {
           builds(orderBy: {direction: DESC}, first: 1) {
             edges {
               node {
-                id
                 number
-                createdAt
                 channel
                 download(key: "server:default") {
                   name
-                  checksums {
-                    sha256
-                  }
-                  size
                   url
                 }
               }

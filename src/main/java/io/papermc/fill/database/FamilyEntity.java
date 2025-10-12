@@ -22,16 +22,16 @@ import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.DocumentReference;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 @CompoundIndex(def = "{'project': 1}")
 @CompoundIndex(def = "{'project': 1, 'name': 1}", unique = true)
 @Document(collection = "families")
 @NullMarked
 public class FamilyEntity extends AbstractEntity implements Family {
-  @DocumentReference
-  private ProjectEntity project;
-  private String name;
+  private ObjectId project;
+  @Field("name")
+  private String key;
   private Java java;
 
   public FamilyEntity() {
@@ -41,25 +41,30 @@ public class FamilyEntity extends AbstractEntity implements Family {
     final ObjectId _id,
     final Instant createdAt,
     final ProjectEntity project,
-    final String name,
+    final String key,
     final Java java
   ) {
     final FamilyEntity entity = new FamilyEntity();
     entity._id = _id;
     entity.createdAt = createdAt;
-    entity.project = project;
-    entity.name = name;
+    entity.project = project._id();
+    entity.key = key;
     entity.java = java;
     return entity;
   }
 
-  public ProjectEntity project() {
+  public ObjectId project() {
     return this.project;
   }
 
   @Override
   public String id() {
-    return this.name;
+    return this._id.toHexString();
+  }
+
+  @Override
+  public String key() {
+    return this.key;
   }
 
   @Override
