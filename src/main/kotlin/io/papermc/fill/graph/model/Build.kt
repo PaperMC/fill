@@ -13,12 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.controller.advice;
+package io.papermc.fill.graph.model
 
-import org.jspecify.annotations.NullMarked;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+import io.papermc.fill.database.BuildEntity
+import io.papermc.fill.model.BuildChannel
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
 
-@ControllerAdvice
-@NullMarked
-public class ExceptionControllerAdvice {
-}
+data class Build(
+  val id: Int,
+  val time: ZonedDateTime,
+  val channel: BuildChannel,
+  val commits: List<Commit>,
+  val downloads: List<Download>
+)
+
+fun BuildEntity.toGraphQL(downloads: List<Download>): Build = Build(
+  id = this.id(),
+  time = this.createdAt().atZone(ZoneOffset.UTC),
+  channel = this.channel(),
+  commits = this.commits().map { it.toGraphQL() },
+  downloads = downloads
+)

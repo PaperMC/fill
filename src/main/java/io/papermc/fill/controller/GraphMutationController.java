@@ -53,14 +53,15 @@ import java.time.Instant;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.graphql.data.method.annotation.Argument;
-import org.springframework.graphql.data.method.annotation.MutationMapping;
+//import org.springframework.graphql.data.method.annotation.Argument;
+//import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
-@Controller
+//@Controller
 @NullMarked
 public class GraphMutationController {
+  /*
   private final ProjectRepository projects;
   private final FamilyRepository families;
   private final VersionRepository versions;
@@ -202,4 +203,5 @@ public class GraphMutationController {
 
     return new PromoteBuildPayload(version);
   }
+   */
 }

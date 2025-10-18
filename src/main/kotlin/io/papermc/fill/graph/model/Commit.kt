@@ -13,12 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.controller.advice;
+package io.papermc.fill.graph.model
 
-import org.jspecify.annotations.NullMarked;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+import java.time.ZonedDateTime
 
-@ControllerAdvice
-@NullMarked
-public class ExceptionControllerAdvice {
-}
+data class Commit(
+  val sha: String,
+  val time: ZonedDateTime,
+  val summary: String,
+  val message: String
+)
+
+fun io.papermc.fill.model.Commit.toGraphQL(): Commit = Commit(
+  sha = this.sha(),
+  time = this.time().atZone(java.time.ZoneOffset.UTC),
+  summary = this.summary(),
+  message = this.message()
+)
+

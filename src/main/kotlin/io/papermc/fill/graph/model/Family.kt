@@ -13,12 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.controller.advice;
+package io.papermc.fill.graph.model
 
-import org.jspecify.annotations.NullMarked;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+import io.papermc.fill.database.FamilyEntity
+import java.time.Instant
 
-@ControllerAdvice
-@NullMarked
-public class ExceptionControllerAdvice {
-}
+data class Family(
+  val id: String,
+  val java: Java,
+  val createdAt: Instant,
+  val updatedAt: Instant
+)
+
+fun FamilyEntity.toGraphQL(): Family = Family(
+  id = this.id(),
+  java = this.java().toGraphQL(),
+  createdAt = this.createdAt(),
+  updatedAt = this.updatedAt()
+)
+

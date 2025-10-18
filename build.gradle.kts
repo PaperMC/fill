@@ -15,6 +15,7 @@ plugins {
   alias(libs.plugins.spotless)
   alias(libs.plugins.spring.boot)
   alias(libs.plugins.spring.deps)
+  kotlin("jvm") version "2.2.20"
 }
 
 indra {
@@ -100,6 +101,7 @@ dependencies {
   implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.15.0")
   implementation("com.bucket4j:bucket4j_jdk17-core:8.15.0")
   implementation("com.discord4j:discord4j-core:3.3.0-RC3")
+  implementation("com.expediagroup:graphql-kotlin-schema-generator:8.0.0")
   implementation("com.github.ben-manes.caffeine:caffeine:3.2.2")
   implementation("com.google.guava:guava:33.5.0-jre")
   implementation("com.graphql-java:graphql-java-extended-scalars:24.0")
@@ -111,7 +113,6 @@ dependencies {
   implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
-  implementation("org.springframework.boot:spring-boot-starter-graphql")
   implementation("org.springframework.boot:spring-boot-starter-json")
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -119,6 +120,5 @@ dependencies {
   implementation("software.amazon.awssdk:s3:2.34.5")
 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
-  testImplementation("org.springframework.graphql:spring-graphql-test")
   testImplementation("org.springframework.security:spring-security-test")
 }

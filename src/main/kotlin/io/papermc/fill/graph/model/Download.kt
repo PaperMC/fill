@@ -13,22 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.configuration;
+package io.papermc.fill.graph.model
 
-import graphql.scalars.ExtendedScalars;
-import org.jspecify.annotations.NullMarked;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.graphql.execution.RuntimeWiringConfigurer;
+import java.net.URI
 
-@Configuration
-@NullMarked
-public class GraphQlConfiguration {
-  @Bean
-  public RuntimeWiringConfigurer runtimeWiringConfigurer() {
-    return builder -> {
-      builder.scalar(ExtendedScalars.Date);
-      builder.scalar(ExtendedScalars.DateTime);
-    };
-  }
-}
+data class Download(
+  val name: String,
+  val checksums: Checksums,
+  val size: Int,
+  val url: URI
+)
+
+data class Checksums(
+  val sha256: String
+)
+
+fun io.papermc.fill.model.Download.toGraphQLWithUrl(url: URI): Download = Download(
+  name = this.name(),
+  checksums = Checksums(sha256 = this.checksums().sha256()),
+  size = this.size(),
+  url = url
+)

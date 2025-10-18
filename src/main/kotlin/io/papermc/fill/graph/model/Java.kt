@@ -13,12 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.controller.advice;
+package io.papermc.fill.graph.model
 
-import org.jspecify.annotations.NullMarked;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+data class Java(
+  val version: JavaVersion,
+  val flags: JavaFlags
+)
 
-@ControllerAdvice
-@NullMarked
-public class ExceptionControllerAdvice {
-}
+data class JavaVersion(
+  val minimum: Int
+)
+
+data class JavaFlags(
+  val recommended: List<String>
+)
+
+fun io.papermc.fill.model.Java.toGraphQL(): Java = Java(
+  version = JavaVersion(minimum = this.version().minimum()),
+  flags = JavaFlags(recommended = this.flags().recommended())
+)
+

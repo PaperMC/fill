@@ -13,12 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.controller.advice;
+package io.papermc.fill.graph.model
 
-import org.jspecify.annotations.NullMarked;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+import io.papermc.fill.model.BuildChannel
+import io.papermc.fill.model.SupportStatus
 
-@ControllerAdvice
-@NullMarked
-public class ExceptionControllerAdvice {
-}
+data class VersionFilters(
+  val familyId: String? = null,
+  val supportStatus: SupportStatus? = null
+)
+
+data class BuildFilters(
+  val channel: BuildChannel? = null
+)
+

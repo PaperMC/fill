@@ -16,14 +16,6 @@ spring:
     mongodb:
       auto-index-creation: true
       database: fill
-  graphql:
-    cors:
-      allowed-origin-patterns: "*"
-    graphiql:
-      enabled: true
-    schema:
-      printer:
-        enabled: true
   servlet:
     multipart:
       max-file-size: 55MB

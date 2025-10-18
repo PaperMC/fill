@@ -44,14 +44,15 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.graphql.data.method.annotation.Argument;
-import org.springframework.graphql.data.method.annotation.QueryMapping;
-import org.springframework.graphql.data.method.annotation.SchemaMapping;
+//import org.springframework.graphql.data.method.annotation.Argument;
+//import org.springframework.graphql.data.method.annotation.QueryMapping;
+//import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
-@Controller
+//@Controller
 @NullMarked
 public class GraphQueryController {
+  /*
   private final ProjectRepository projects;
   private final FamilyRepository families;
   private final VersionRepository versions;
@@ -235,4 +236,5 @@ public class GraphQueryController {
       ? download.withUrl(this.storage.getDownloadUrl(build.project(), build.version(), build, download))
       : null;
   }
+   */
 }
