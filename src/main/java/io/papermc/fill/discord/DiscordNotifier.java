@@ -43,14 +43,13 @@ import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.BuildPublishListener;
 import io.papermc.fill.util.discord.Components;
 import io.papermc.fill.util.discord.DiscordNotificationChannel;
+import io.papermc.fill.util.discord.PrToMdHyperLinkUtil;
 import io.papermc.fill.util.git.GitRepository;
 import java.net.URI;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.OptionalInt;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -62,9 +61,6 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty("app.discord.token")
 @NullMarked
 public class DiscordNotifier implements BuildPublishListener {
-
-  private static final Pattern TRAILING_PR = Pattern.compile(" \\(#(\\d+)\\)\\z");
-
   private final ApplicationDiscordProperties properties;
 
   private final BuildRepository builds;
@@ -152,7 +148,7 @@ public class DiscordNotifier implements BuildPublishListener {
               repository.name(),
               commit.sha()
             ),
-            hyperlinkPrMention(commit.summary(), repository.owner(), repository.name())
+            PrToMdHyperLinkUtil.hyperlinkTrailingPrMention(commit.summary(), repository.owner(), repository.name())
           )).collect(Collectors.joining("\n"))
       ));
     }, switch (build.channel()) {
@@ -198,18 +194,5 @@ public class DiscordNotifier implements BuildPublishListener {
 
   private static Emoji createEmoji(final ApplicationDiscordProperties.Emojis.Emoji emoji) {
     return CustomEmoji.of(emoji.id(), emoji.name(), false);
-  }
-
-  private static String hyperlinkPrMention(final String commitSummary, final String repoOwner, final String repoName) {
-    if (commitSummary.isEmpty()) return commitSummary;
-
-    final Matcher matcher = TRAILING_PR.matcher(commitSummary);
-    if (!matcher.find()) return commitSummary;
-
-    final String prNumber = matcher.group(1);
-
-    return matcher.replaceFirst(
-      String.format(" ([#%s](https://github.com/%s/%s/pull/%s))",
-        prNumber, repoOwner, repoName, prNumber));
   }
 }
