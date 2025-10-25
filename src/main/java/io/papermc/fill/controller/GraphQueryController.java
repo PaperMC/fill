@@ -23,6 +23,7 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
+import io.papermc.fill.exception.BuildNotFoundException;
 import io.papermc.fill.exception.FamilyNotFoundException;
 import io.papermc.fill.exception.ProjectNotFoundException;
 import io.papermc.fill.graphql.BuildFilters;
@@ -54,6 +55,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -266,16 +268,25 @@ public class GraphQueryController {
       builds = this.builds.findAllByVersion(version, pageable);
     }
     return BUILD_PAGINATOR.paginate(
-      builds.map(build -> new BuildWithDownloadsImpl<>(build, Downloads.map(build.downloads(), download -> {
-        final URI url = this.storage.getDownloadUrl(project, version, build, download);
-        return download.withUrl(url);
-      }))),
+      builds.map(this.mapBuild(project, version)),
       orderBy != null ? orderBy.direction() : null,
       after,
       before,
       first,
       last
     );
+  }
+
+  @SchemaMapping(typeName = "Version", field = "build")
+  public @Nullable BuildWithDownloads<DownloadWithUrl> mapProjectVersion(
+    final VersionEntity version,
+    @Argument
+    final int number
+  ) {
+    final ProjectEntity project = this.projects.findById(version.project()).orElseThrow(ProjectNotFoundException::new);
+    return this.builds.findByVersionAndNumber(version._id(), number)
+      .map(this.mapBuild(project, version))
+      .orElseThrow(BuildNotFoundException::new);
   }
 
   @SchemaMapping(typeName = "Build", field = "id")
@@ -315,5 +326,12 @@ public class GraphQueryController {
     final String key
   ) {
     return build.getDownloadByKey(key);
+  }
+
+  private Function<BuildEntity, BuildWithDownloads<DownloadWithUrl>> mapBuild(final Project project, final Version version) {
+    return build -> new BuildWithDownloadsImpl<>(build, Downloads.map(build.downloads(), download -> {
+      final URI url = this.storage.getDownloadUrl(project, version, build, download);
+      return download.withUrl(url);
+    }));
   }
 }

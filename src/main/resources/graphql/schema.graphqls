@@ -145,6 +145,10 @@ type Version implements Node {
     """
     last: Int
   ): BuildConnection
+
+  build(
+    number: Int!
+  ): Build
 }
 
 input VersionFilters {
