@@ -108,7 +108,7 @@ dependencies {
   implementation("io.jsonwebtoken:jjwt-jackson:0.13.0")
   implementation("io.micrometer:micrometer-registry-prometheus")
   implementation("org.apache.commons:commons-text:1.14.0")
-  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
+  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
   implementation("org.springframework.boot:spring-boot-starter-graphql")
