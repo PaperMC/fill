@@ -15,6 +15,10 @@
  */
 package io.papermc.fill;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.ZoneOffset;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -24,6 +28,13 @@ public final class SharedConstants {
   @Deprecated
   public static final String API_V2_ROUTE_PREFIX = "/v2/";
   public static final String API_V3_ROUTE_PREFIX = "/v3/";
+
+  public static final Instant API_V2_CUTOFF = LocalDate.of(2025, Month.DECEMBER, 31)
+    .atStartOfDay(ZoneOffset.UTC)
+    .toInstant();
+  public static final Instant API_V2_SUNSET = LocalDate.of(2026, Month.JULY, 1)
+    .atStartOfDay(ZoneOffset.UTC)
+    .toInstant();
 
   private SharedConstants() {
   }

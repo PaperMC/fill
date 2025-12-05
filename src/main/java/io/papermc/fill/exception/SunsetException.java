@@ -18,8 +18,8 @@ package io.papermc.fill.exception;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class DiscontinuedException extends AppException {
-  public DiscontinuedException() {
-    super("Discontinued.");
+public class SunsetException extends AppException {
+  public SunsetException() {
+    super("This API version has been sunset and is no longer available. To continue using the service, please upgrade to a supported API version.");
   }
 }

@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.controller;
 
+import io.papermc.fill.SharedConstants;
 import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.ProjectEntity;
@@ -84,7 +85,13 @@ public class Data2Controller {
   ) {
     final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
     final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
+    if (version.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
+      throw new VersionNotFoundException();
+    }
     final BuildEntity build = this.builds.findByVersionAndNumber(version, buildNumber).orElseThrow(BuildNotFoundException::new);
+    if (build.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
+      throw new BuildNotFoundException();
+    }
 
     final Download download = build.getDownloadByName(downloadName);
     if (download != null) {

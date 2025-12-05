@@ -15,9 +15,14 @@
  */
 package io.papermc.fill.model;
 
+import java.util.List;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public interface Keyed {
+  static List<String> keysOf(final List<? extends Keyed> keys) {
+    return keys.stream().map(Keyed::key).toList();
+  }
+
   String key();
 }

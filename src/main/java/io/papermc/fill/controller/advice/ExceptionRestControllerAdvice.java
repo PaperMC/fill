@@ -20,7 +20,6 @@ import io.papermc.fill.api.ApiVersion;
 import io.papermc.fill.exception.BuildNotFoundException;
 import io.papermc.fill.exception.ChecksumMismatchException;
 import io.papermc.fill.exception.CommitOrderValidationException;
-import io.papermc.fill.exception.DiscontinuedException;
 import io.papermc.fill.exception.DownloadFailedException;
 import io.papermc.fill.exception.DownloadNotFoundException;
 import io.papermc.fill.exception.DuplicateBuildException;
@@ -29,6 +28,7 @@ import io.papermc.fill.exception.DuplicateVersionException;
 import io.papermc.fill.exception.FamilyNotFoundException;
 import io.papermc.fill.exception.ProjectNotFoundException;
 import io.papermc.fill.exception.PublishFailedException;
+import io.papermc.fill.exception.SunsetException;
 import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.model.response.ErrorResponse;
 import io.papermc.fill.model.response.LegacyErrorResponse;
@@ -127,12 +127,12 @@ public class ExceptionRestControllerAdvice {
   }
 
   @ExceptionHandler({
-    DiscontinuedException.class
+    SunsetException.class
   })
   public ResponseEntity<?> on410Gone(final Throwable throwable) {
     return Responses.gone(new ErrorResponse(
       switch (throwable) {
-        case final DiscontinuedException _ -> "discontinued";
+        case final SunsetException _ -> "sunset";
         default -> throw new IllegalStateException("Unexpected value: " + throwable);
       },
       throwable.getMessage()
