@@ -34,6 +34,7 @@ import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.DownloadWithUrl;
 import io.papermc.fill.model.Family;
+import io.papermc.fill.model.Keyed;
 import io.papermc.fill.model.Project;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.model.response.ErrorResponse;
@@ -398,7 +399,7 @@ public class Meta3Controller {
       .stream()
       .collect(Collectors.toMap(
         e -> e.getKey().key(),
-        e -> e.getValue().stream().map(VersionEntity::key).toList(),
+        e -> Keyed.keysOf(e.getValue()),
         (a, b) -> b,
         LinkedHashMap::new
       ));
