@@ -22,10 +22,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.filter.ShallowEtagHeaderFilter;
 import org.springframework.web.filter.UrlHandlerFilter;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @NullMarked
-public class WebConfiguration {
+public class WebConfiguration implements WebMvcConfigurer {
   @Bean
   public ShallowEtagHeaderFilter shallowEtagHeaderFilter() {
     return new ShallowEtagHeaderFilter();
@@ -40,5 +42,10 @@ public class WebConfiguration {
       .build();
     bean.setFilter(filter);
     return bean;
+  }
+
+  @Override
+  public void addResourceHandlers(final ResourceHandlerRegistry registry) {
+    registry.addResourceHandler("/robots.txt").addResourceLocations("classpath:/static/");
   }
 }

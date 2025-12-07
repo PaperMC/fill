@@ -12,6 +12,7 @@ plugins {
   alias(libs.plugins.indra.checkstyle)
   alias(libs.plugins.indra.git)
   alias(libs.plugins.jib)
+  alias(libs.plugins.sentry)
   alias(libs.plugins.spotless)
   alias(libs.plugins.spring.boot)
   alias(libs.plugins.spring.deps)
@@ -79,6 +80,11 @@ spotless {
     licenseHeaderFile(rootProject.file("license_header.txt"))
     targetExclude("build/generated/**/*.java")
   }
+}
+
+tasks.named("sourcesJar") {
+  dependsOn(tasks.named("collectExternalDependenciesForSentry"))
+  dependsOn(tasks.named("generateSentryDebugMetaPropertiesjava"))
 }
 
 repositories {
