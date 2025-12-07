@@ -1,3 +1,6 @@
 logging:
   level:
     org.springframework.web.servlet.PageNotFound: error
+
+sentry:
+  traces-sample-rate: 0.1
