@@ -114,15 +114,12 @@ public class StorageServiceImpl implements StorageService {
           .bucket(properties.s3().bucket())
           .key(path)
           .build();
-        final ResponseInputStream<GetObjectResponse> response;
-        try {
-          response = this.s3.getObject(request);
+        try (final ResponseInputStream<GetObjectResponse> response = this.s3.getObject(request)) {
+          LOGGER.debug("Retrieved object {} from bucket", download);
+          final byte[] bytes = response.readAllBytes();
+          yield new Asset(bytes, HttpHeaders.EMPTY);
         } catch (final S3Exception e) {
           throw createStorageReadException(download, path, "s3 exception", e);
-        }
-        LOGGER.debug("Retrieved object {} from bucket", download);
-        try {
-          yield new Asset(response.readAllBytes(), HttpHeaders.EMPTY);
         } catch (final IOException e) {
           throw createStorageReadException(download, path, "i/o exception", e);
         }
