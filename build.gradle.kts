@@ -104,7 +104,7 @@ dependencies {
   developmentOnly("org.springframework.boot:spring-boot-devtools")
 
   implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.15.0")
-  implementation("com.bucket4j:bucket4j_jdk17-core:8.15.0")
+  implementation("com.bucket4j:bucket4j_jdk17-core:8.16.0")
   implementation("com.discord4j:discord4j-core:3.3.0")
   implementation("com.github.ben-manes.caffeine:caffeine:3.2.3")
   implementation("com.google.guava:guava:33.5.0-jre")
