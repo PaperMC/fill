@@ -1,5 +1,5 @@
 [versions]
-indra = "3.2.0"
+indra = "4.0.0"
 
 [plugins]
 gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version = "2.5.4" }
