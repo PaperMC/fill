@@ -126,6 +126,7 @@ public class GraphMutationController {
     if (this.versions.findAllByFamily(family).findAny().isPresent()) {
       throw new FamilyInUseException("Cannot delete this family because one or more versions are still associated with it.");
     }
+    this.families.delete(family);
     return new DeleteFamilyPayload(true);
   }
 
@@ -181,6 +182,7 @@ public class GraphMutationController {
     if (this.builds.findAllByVersion(version).findAny().isPresent()) {
       throw new VersionInUseException("Cannot delete this version because one or more builds are still associated with it.");
     }
+    this.versions.delete(version);
     return new DeleteVersionPayload(true);
   }
 
