@@ -154,7 +154,6 @@ public class PublishController {
     }
 
     final List<Commit> commits = request.commits().reversed();
-    Commit.checkOrder(commits);
 
     final Map<String, Download> downloads = request.downloads();
 
