@@ -21,9 +21,9 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JacksonComponent;
 
-@JsonComponent
+@JacksonComponent
 @NullMarked
 public class ObjectIdSerializer extends StdSerializer<ObjectId> {
   public ObjectIdSerializer() {
