@@ -175,7 +175,7 @@ public class DiscordNotifier implements BuildPublishListener {
     if (buildBefore != null && !buildBefore.commits().isEmpty() && !build.commits().isEmpty()) {
       final String url = String.format(
         Locale.ROOT,
-        "https://diffs.dev/?github_url=https://github.com/%s/%s/compare/%s..%s",
+        "https://github.com/%s/%s/compare/%s..%s",
         repository.owner(),
         repository.name(),
         buildBefore.commits().getFirst().sha(),
