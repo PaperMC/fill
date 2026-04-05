@@ -57,12 +57,13 @@ public class StorageServiceImpl implements StorageService {
 
   @Autowired
   public StorageServiceImpl(
-    final ApplicationApiProperties properties,
-    final RestClient.Builder http
+    final ApplicationApiProperties properties
   ) {
     this.properties = properties;
     this.s3 = S3Configuration.createClient(properties.storage().s3());
-    this.http = http.build();
+    this.http = RestClient.builder()
+      .defaultHeader(HttpHeaders.USER_AGENT, "Fill (Internal)")
+      .build();
   }
 
   @Override
@@ -129,7 +130,6 @@ public class StorageServiceImpl implements StorageService {
         try {
           final ResponseEntity<byte[]> response = this.http.get()
             .uri(uri)
-            .header(HttpHeaders.USER_AGENT, "Fill (Internal)")
             .retrieve()
             .toEntity(byte[].class);
           if (response.getStatusCode().is2xxSuccessful()) {

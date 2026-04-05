@@ -6,16 +6,10 @@ management:
     access:
       default: read_only
 
-server:
-  error:
-    whitelabel:
-      enabled: false
-
 spring:
   data:
     mongodb:
       auto-index-creation: true
-      database: fill
   graphql:
     cors:
       allowed-origin-patterns: "*"
@@ -24,11 +18,16 @@ spring:
     schema:
       printer:
         enabled: true
+  mongodb:
+    database: fill
   servlet:
     multipart:
-      max-file-size: 55MB
-      max-request-size: 70MB
+      max-file-size: 75MB
+      max-request-size: 100MB
   web:
+    error:
+      whitelabel:
+        enabled: false
     resources:
       add-mappings: false
 
