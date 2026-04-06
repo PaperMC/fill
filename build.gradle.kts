@@ -70,7 +70,7 @@ jib {
     image = "ghcr.io/papermc/fill"
     tags = setOf(
       "latest",
-      "${indraGit.branchName()}-${indraGit.commit().get().name()?.take(7)}-${Instant.now().epochSecond}"
+      "${indraGit.branchName().get()}-${indraGit.commit().get().name()?.take(7)}-${Instant.now().epochSecond}"
     )
   }
 }
