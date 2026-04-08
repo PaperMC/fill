@@ -33,9 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MimeType;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -83,7 +83,7 @@ public class StorageServiceImpl implements StorageService {
     final BuildWithDownloads<Download> build,
     final Download download,
     final byte[] content,
-    final MediaType type
+    final MimeType type
   ) throws StorageWriteException {
     final ApplicationApiProperties.Storage properties = this.properties.storage();
     final String path = StorageService.createPath(properties.path(), project, version, build, download);

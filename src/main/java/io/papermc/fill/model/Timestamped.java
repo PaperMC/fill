@@ -16,10 +16,14 @@
 package io.papermc.fill.model;
 
 import java.time.Instant;
+import java.util.Comparator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public interface Timestamped {
+  Comparator<? super Timestamped> COMPARATOR_CREATED_AT = Comparator.comparing(Timestamped::createdAt);
+  Comparator<? super Timestamped> COMPARATOR_CREATED_AT_REVERSE = COMPARATOR_CREATED_AT.reversed();
+
   Instant createdAt();
 
   Instant updatedAt();

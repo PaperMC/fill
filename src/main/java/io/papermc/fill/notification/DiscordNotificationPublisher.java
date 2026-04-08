@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.discord;
+package io.papermc.fill.notification;
 
 import discord4j.common.util.TimestampFormat;
 import discord4j.core.object.component.Button;
@@ -40,7 +40,6 @@ import io.papermc.fill.model.Download;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.service.DiscordService;
 import io.papermc.fill.service.StorageService;
-import io.papermc.fill.util.BuildPublishListener;
 import io.papermc.fill.util.discord.Components;
 import io.papermc.fill.util.discord.DiscordNotificationChannel;
 import io.papermc.fill.util.git.GitRepository;
@@ -59,7 +58,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty("app.discord.token")
 @NullMarked
-public class DiscordNotifier implements BuildPublishListener {
+public class DiscordNotificationPublisher implements BuildListener {
   private final ApplicationDiscordProperties properties;
 
   private final BuildRepository builds;
@@ -68,7 +67,7 @@ public class DiscordNotifier implements BuildPublishListener {
   private final DiscordService discord;
 
   @Autowired
-  public DiscordNotifier(
+  public DiscordNotificationPublisher(
     final ApplicationDiscordProperties properties,
     final BuildRepository builds,
     final StorageService storage,

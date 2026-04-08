@@ -17,7 +17,6 @@ package io.papermc.fill.controller;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.google.common.hash.Hashing;
 import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.ProjectEntity;
@@ -39,8 +38,9 @@ import io.papermc.fill.model.request.PublishRequest;
 import io.papermc.fill.model.request.UploadRequest;
 import io.papermc.fill.model.response.PublishResponse;
 import io.papermc.fill.model.response.UploadResponse;
+import io.papermc.fill.notification.BuildListener;
 import io.papermc.fill.service.StorageService;
-import io.papermc.fill.util.BuildPublishListener;
+import io.papermc.fill.util.crypto.HashAlgorithm;
 import io.papermc.fill.util.http.MediaTypes;
 import io.papermc.fill.util.http.Responses;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -60,6 +60,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.MimeType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -81,7 +82,7 @@ public class PublishController {
 
   private final StorageService storage;
 
-  private final Set<BuildPublishListener> buildPublishListeners;
+  private final Set<BuildListener> buildListeners;
 
   private final LoadingCache<UUID, StagingInstance> instances = Caffeine.newBuilder()
     .expireAfterAccess(Duration.ofMinutes(5))
@@ -93,13 +94,13 @@ public class PublishController {
     final VersionRepository versions,
     final BuildRepository builds,
     final StorageService storage,
-    final Set<BuildPublishListener> buildPublishListeners
+    final Set<BuildListener> buildListeners
   ) {
     this.projects = projects;
     this.versions = versions;
     this.builds = builds;
     this.storage = storage;
-    this.buildPublishListeners = buildPublishListeners;
+    this.buildListeners = buildListeners;
   }
 
   @CrossOrigin(methods = RequestMethod.POST)
@@ -121,7 +122,8 @@ public class PublishController {
         final String message = "Missing filename";
         throw createPublishFailedException(request, message, new IllegalArgumentException(message));
       }
-      instance.addStagedFile(filename, file.getBytes());
+      // TODO: dynamic MediaType
+      instance.addStagedFile(filename, new VirtualFile(file.getBytes(), MediaTypes.APPLICATION_JAVA_ARCHIVE));
     } catch (final IOException e) {
       throw createPublishFailedException(request, "i/o exception", e);
     }
@@ -170,11 +172,11 @@ public class PublishController {
 
     for (final Map.Entry<String, Download> entry : downloads.entrySet()) {
       final Download download = entry.getValue();
-      final byte[] bytes = instance.removeStagedFile(download.name());
-      if (bytes == null) {
+      final VirtualFile file = instance.removeStagedFile(download.name());
+      if (file == null) {
         throw createPublishFailedException(request, String.format("Download %s has no associated file", download.name()), new DownloadNotFoundException());
       }
-      final Checksums checksums = createChecksums(bytes);
+      final Checksums checksums = createChecksums(file.bytes());
       if (!download.checksums().equals(checksums)) {
         final String message = String.format(
           "Checksum mismatch for download %s: expected %s but got %s",
@@ -185,8 +187,7 @@ public class PublishController {
         throw createPublishFailedException(request, message, new ChecksumMismatchException(message));
       }
       try {
-        // TODO: dynamic MediaType
-        this.storage.putObject(project, version, build, download, bytes, MediaTypes.APPLICATION_JAVA_ARCHIVE);
+        this.storage.putObject(project, version, build, download, file.bytes(), file.type());
       } catch (final StorageWriteException e) {
         throw createPublishFailedException(request, String.format("Could not put object into bucket for %s", download.name()), e);
       }
@@ -198,7 +199,7 @@ public class PublishController {
 
     this.builds.save(build);
 
-    for (final BuildPublishListener listener : this.buildPublishListeners) {
+    for (final BuildListener listener : this.buildListeners) {
       listener.onBuildPublished(project, version, build);
     }
 
@@ -207,7 +208,7 @@ public class PublishController {
 
   private static Checksums createChecksums(final byte[] bytes) {
     return new Checksums(
-      Hashing.sha256().hashBytes(bytes).toString()
+      HashAlgorithm.SHA256.hash(bytes).toString()
     );
   }
 
@@ -217,18 +218,25 @@ public class PublishController {
   }
 
   @NullMarked
+  record VirtualFile(
+    byte[] bytes,
+    MimeType type
+  ) {
+  }
+
+  @NullMarked
   static final class StagingInstance {
-    private final Map<String, byte[]> files = new HashMap<>();
+    private final Map<String, VirtualFile> files = new HashMap<>();
 
     public boolean hasAnyStagedFiles() {
       return !this.files.isEmpty();
     }
 
-    public byte @Nullable [] removeStagedFile(final String name) {
+    public @Nullable VirtualFile removeStagedFile(final String name) {
       return this.files.get(name);
     }
 
-    public void addStagedFile(final String name, final byte[] bytes) {
+    public void addStagedFile(final String name, final VirtualFile bytes) {
       this.files.put(name, bytes);
     }
   }

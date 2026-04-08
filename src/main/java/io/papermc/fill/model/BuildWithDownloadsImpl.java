@@ -30,7 +30,7 @@ public record BuildWithDownloadsImpl<D extends AbstractDownload>(
   List<Commit> commits,
   Map<String, D> downloads
 ) implements BuildWithDownloads<D> {
-  public BuildWithDownloadsImpl(final BuildWithDownloads<?> that, final Map<String, D> downloads) {
+  public BuildWithDownloadsImpl(final BuildWithDownloads<? extends AbstractDownload> that, final Map<String, D> downloads) {
     this(that.id(), that.number(), that.createdAt(), that.updatedAt(), that.channel(), that.commits(), downloads);
   }
 }

@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.controller;
 
+import com.google.common.collect.Maps;
 import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.FamilyEntity;
@@ -44,7 +45,6 @@ import io.papermc.fill.model.Support;
 import io.papermc.fill.model.SupportStatus;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.service.StorageService;
-import io.papermc.fill.util.Downloads;
 import io.papermc.fill.util.graphql.CursorCodec;
 import io.papermc.fill.util.graphql.CursorPaginator;
 import java.net.URI;
@@ -329,7 +329,7 @@ public class GraphQueryController {
   }
 
   private Function<BuildEntity, BuildWithDownloads<DownloadWithUrl>> mapBuild(final Project project, final Version version) {
-    return build -> new BuildWithDownloadsImpl<>(build, Downloads.map(build.downloads(), download -> {
+    return build -> new BuildWithDownloadsImpl<>(build, Maps.transformValues(build.downloads(), download -> {
       final URI url = this.storage.getDownloadUrl(project, version, build, download);
       return download.withUrl(url);
     }));

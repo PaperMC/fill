@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.service;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.FamilyEntity;
@@ -75,7 +76,8 @@ public class VersionCheckServiceImpl implements VersionCheckService {
     return UP_TO_DATE;
   }
 
-  private static <T, K> int findDistance(final List<T> items, final K target, final Function<T, K> getter) {
+  @VisibleForTesting
+  static <T, K> int findDistance(final List<T> items, final K target, final Function<T, K> getter) {
     for (int i = 0; i < items.size(); i++) {
       if (getter.apply(items.get(i)).equals(target)) {
         return i;

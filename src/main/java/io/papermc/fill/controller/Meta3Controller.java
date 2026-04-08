@@ -16,6 +16,7 @@
 package io.papermc.fill.controller;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import io.papermc.fill.database.AbstractEntity;
 import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.BuildRepository;
@@ -427,15 +428,10 @@ public class Meta3Controller {
   }
 
   private BuildResponse createBuildResponse(final Project project, final Version version, final BuildWithDownloads<Download> build) {
-    final Map<String, DownloadWithUrl> downloads = build.downloads().entrySet()
-      .stream()
-      .map(entry -> {
-        final Download download = entry.getValue();
-        final URI url = this.storage.getDownloadUrl(project, version, build, download);
-        final DownloadWithUrl downloadWithUrl = download.withUrl(url);
-        return Map.entry(entry.getKey(), downloadWithUrl);
-      })
-      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    final Map<String, DownloadWithUrl> downloads = Maps.transformValues(build.downloads(), download -> {
+      final URI url = this.storage.getDownloadUrl(project, version, build, download);
+      return download.withUrl(url);
+    });
     return new BuildResponse(build.number(), build.createdAt(), build.channel(), build.commits(), downloads);
   }
 }
