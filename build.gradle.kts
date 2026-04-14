@@ -107,7 +107,7 @@ dependencies {
   implementation("com.bucket4j:bucket4j_jdk17-core:8.17.0")
   implementation("com.discord4j:discord4j-core:3.3.2")
   implementation("com.github.ben-manes.caffeine:caffeine:3.2.3")
-  implementation("com.google.guava:guava:33.5.0-jre")
+  implementation("com.google.guava:guava:33.6.0-jre")
   implementation("com.graphql-java:graphql-java-extended-scalars:24.0")
   implementation("io.jsonwebtoken:jjwt-api:0.13.0")
   implementation("io.jsonwebtoken:jjwt-impl:0.13.0")
