@@ -23,8 +23,8 @@ import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public interface Build extends Identified, Timestamped {
-  Comparator<Build> COMPARATOR_NUMBER = Comparator.comparing(Build::number);
-  Comparator<Build> COMPARATOR_NUMBER_REVERSE = COMPARATOR_NUMBER.reversed();
+  Comparator<Build> NUMBER_ASC = Comparator.comparing(Build::number);
+  Comparator<Build> NUMBER_DESC = NUMBER_ASC.reversed();
 
   int number();
 

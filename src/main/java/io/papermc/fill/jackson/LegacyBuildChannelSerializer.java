@@ -36,7 +36,6 @@ public class LegacyBuildChannelSerializer extends StdSerializer<BuildChannel> {
       case BETA -> "experimental";
       case STABLE -> "default";
       case RECOMMENDED -> "default";
-      default -> throw new IllegalStateException("Unexpected value: " + value);
     });
   }
 }

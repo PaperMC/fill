@@ -38,11 +38,12 @@ import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.BuildWithDownloadsImpl;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.DownloadWithUrl;
-import io.papermc.fill.model.Family;
 import io.papermc.fill.model.Java;
+import io.papermc.fill.model.Keyed;
 import io.papermc.fill.model.Project;
 import io.papermc.fill.model.Support;
 import io.papermc.fill.model.SupportStatus;
+import io.papermc.fill.model.Timestamped;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.graphql.CursorCodec;
@@ -86,7 +87,6 @@ public class GraphQueryController {
   private final FamilyRepository families;
   private final VersionRepository versions;
   private final BuildRepository builds;
-
   private final StorageService storage;
 
   @Autowired
@@ -108,7 +108,7 @@ public class GraphQueryController {
   public List<ProjectEntity> getProjects() {
     return this.projects.findAll()
       .stream()
-      .sorted(Project.COMPARATOR_KEY)
+      .sorted(Keyed.KEY_ASC)
       .toList();
   }
 
@@ -140,7 +140,7 @@ public class GraphQueryController {
     final ProjectEntity project
   ) {
     Stream<FamilyEntity> families = this.families.findAllByProject(project);
-    families = families.sorted(Family.COMPARATOR_CREATED_AT_REVERSE);
+    families = families.sorted(Timestamped.CREATED_AT_DESC);
     return families.toList();
   }
 

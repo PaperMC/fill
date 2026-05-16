@@ -30,14 +30,14 @@ import io.papermc.fill.database.VersionRepository;
 import io.papermc.fill.exception.BuildNotFoundException;
 import io.papermc.fill.exception.FamilyNotFoundException;
 import io.papermc.fill.exception.ProjectNotFoundException;
+import io.papermc.fill.exception.SunsetException;
 import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
-import io.papermc.fill.model.Family;
 import io.papermc.fill.model.Keyed;
-import io.papermc.fill.model.Version;
+import io.papermc.fill.model.Timestamped;
 import io.papermc.fill.model.response.v2.BuildResponse;
 import io.papermc.fill.model.response.v2.BuildsResponse;
 import io.papermc.fill.model.response.v2.FamilyBuildsResponse;
@@ -51,6 +51,7 @@ import io.papermc.fill.util.http.Caching;
 import io.papermc.fill.util.http.Responses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.PositiveOrZero;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -79,8 +80,8 @@ public class Meta2Controller {
   private static final Duration CACHE_LENGTH_VERSION_BUILDS = Duration.ofMinutes(5);
   private static final Duration CACHE_LENGTH_BUILD = Duration.ofDays(7);
 
+  private final Clock clock;
   private final ApplicationApiProperties properties;
-
   private final ProjectRepository projects;
   private final FamilyRepository families;
   private final VersionRepository versions;
@@ -88,12 +89,14 @@ public class Meta2Controller {
 
   @Autowired
   public Meta2Controller(
+    final Clock clock,
     final ApplicationApiProperties properties,
     final ProjectRepository projects,
     final FamilyRepository families,
     final VersionRepository versions,
     final BuildRepository builds
   ) {
+    this.clock = clock;
     this.properties = properties;
     this.projects = projects;
     this.families = families;
@@ -104,6 +107,9 @@ public class Meta2Controller {
   @CrossOrigin(methods = RequestMethod.GET)
   @GetMapping("/v2/projects")
   public ResponseEntity<?> getProjects() {
+    if (this.isSunset()) {
+      throw new SunsetException();
+    }
     final List<ProjectEntity> projects = this.projects.findAll();
     final ProjectsResponse response = new ProjectsResponse(Keyed.keysOf(projects));
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_PROJECTS));
@@ -115,14 +121,17 @@ public class Meta2Controller {
     @PathVariable("project")
     final String projectKey
   ) {
+    if (this.isSunset()) {
+      throw new SunsetException();
+    }
     final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
     final List<FamilyEntity> families = this.families.findAllByProject(project)
       .filter(family -> family.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
-      .sorted(Family.COMPARATOR_CREATED_AT)
+      .sorted(Timestamped.CREATED_AT_ASC)
       .toList();
     final List<VersionEntity> versions = this.versions.findAllByProject(project)
       .filter(version -> version.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
-      .sorted(Version.COMPARATOR_CREATED_AT)
+      .sorted(Timestamped.CREATED_AT_ASC)
       .toList();
     final ProjectResponse response = new ProjectResponse(
       project.key(),
@@ -141,6 +150,9 @@ public class Meta2Controller {
     @PathVariable("family")
     final String familyKey
   ) {
+    if (this.isSunset()) {
+      throw new SunsetException();
+    }
     final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
     final FamilyEntity family = this.families.findByProjectAndKey(project, familyKey).orElseThrow(FamilyNotFoundException::new);
     if (family.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
@@ -148,7 +160,7 @@ public class Meta2Controller {
     }
     final List<VersionEntity> versions = this.versions.findAllByFamily(family)
       .filter(version -> version.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
-      .sorted(Version.COMPARATOR_CREATED_AT)
+      .sorted(Timestamped.CREATED_AT_ASC)
       .toList();
     final FamilyResponse response = new FamilyResponse(
       project.key(),
@@ -167,6 +179,9 @@ public class Meta2Controller {
     @PathVariable("family")
     final String familyKey
   ) {
+    if (this.isSunset()) {
+      throw new SunsetException();
+    }
     final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
     final FamilyEntity family = this.families.findByProjectAndKey(project, familyKey).orElseThrow(FamilyNotFoundException::new);
     if (family.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
@@ -174,13 +189,13 @@ public class Meta2Controller {
     }
     final List<VersionEntity> versions = this.versions.findAllByFamily(family)
       .filter(version -> version.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
-      .sorted(Version.COMPARATOR_CREATED_AT)
+      .sorted(Timestamped.CREATED_AT_ASC)
       .toList();
     final Map<ObjectId, VersionEntity> versionsById = versions.stream()
       .collect(Collectors.toMap(AbstractEntity::_id, Function.identity()));
     final List<BuildEntity> builds = this.builds.findAllByVersionIn(versionsById.keySet())
       .filter(build -> build.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
-      .sorted(Build.COMPARATOR_NUMBER)
+      .sorted(Build.NUMBER_ASC)
       .toList();
     final FamilyBuildsResponse response = new FamilyBuildsResponse(
       project.key(),
@@ -208,6 +223,9 @@ public class Meta2Controller {
     @PathVariable("version")
     final String versionKey
   ) {
+    if (this.isSunset()) {
+      throw new SunsetException();
+    }
     final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
     final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
     if (version.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
@@ -215,7 +233,7 @@ public class Meta2Controller {
     }
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .filter(build -> build.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
-      .sorted(Build.COMPARATOR_NUMBER)
+      .sorted(Build.NUMBER_ASC)
       .toList();
     final VersionResponse response = new VersionResponse(
       project.key(),
@@ -234,6 +252,9 @@ public class Meta2Controller {
     @PathVariable("version")
     final String versionKey
   ) {
+    if (this.isSunset()) {
+      throw new SunsetException();
+    }
     final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
     final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
     if (version.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
@@ -241,7 +262,7 @@ public class Meta2Controller {
     }
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .filter(build -> build.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
-      .sorted(Build.COMPARATOR_NUMBER)
+      .sorted(Build.NUMBER_ASC)
       .toList();
     final BuildsResponse response = new BuildsResponse(
       project.key(),
@@ -270,6 +291,9 @@ public class Meta2Controller {
     @PositiveOrZero
     final int buildNumber
   ) {
+    if (this.isSunset()) {
+      throw new SunsetException();
+    }
     final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
     final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
     if (version.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
@@ -291,6 +315,10 @@ public class Meta2Controller {
       this.toDownloads(project.key(), build.downloads())
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_BUILD));
+  }
+
+  private boolean isSunset() {
+    return this.clock.instant().isAfter(SharedConstants.API_V2_SUNSET);
   }
 
   private static boolean isPromoted(final Build build) {

@@ -21,6 +21,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.papermc.fill.configuration.properties.ApplicationSecurityProperties;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
@@ -38,10 +39,15 @@ public class JwtServiceImpl implements JwtService {
   private static final Duration LIFETIME_ACCESS = Duration.ofHours(1);
   private static final Duration LIFETIME_REFRESH = Duration.ofDays(1);
 
+  private final Clock clock;
   private final SecretKey key;
 
   @Autowired
-  public JwtServiceImpl(final ApplicationSecurityProperties properties) {
+  public JwtServiceImpl(
+    final Clock clock,
+    final ApplicationSecurityProperties properties
+  ) {
+    this.clock = clock;
     this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(properties.jwt().secret()));
   }
 
@@ -81,7 +87,7 @@ public class JwtServiceImpl implements JwtService {
   }
 
   private String createToken(final UserDetails user, final Duration lifetime) {
-    final Instant now = Instant.now();
+    final Instant now = this.clock.instant();
     return Jwts.builder()
       .subject(user.getUsername())
       .issuedAt(Date.from(now))

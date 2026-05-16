@@ -19,6 +19,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.BuildRepository;
+import io.papermc.fill.database.FamilyEntity;
+import io.papermc.fill.database.FamilyRepository;
 import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
@@ -26,6 +28,7 @@ import io.papermc.fill.database.VersionRepository;
 import io.papermc.fill.exception.ChecksumMismatchException;
 import io.papermc.fill.exception.DownloadNotFoundException;
 import io.papermc.fill.exception.DuplicateBuildException;
+import io.papermc.fill.exception.FamilyNotFoundException;
 import io.papermc.fill.exception.InvalidStagingInstanceException;
 import io.papermc.fill.exception.ProjectNotFoundException;
 import io.papermc.fill.exception.PublishFailedException;
@@ -34,6 +37,7 @@ import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.model.Checksums;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
+import io.papermc.fill.model.Support;
 import io.papermc.fill.model.request.PublishRequest;
 import io.papermc.fill.model.request.UploadRequest;
 import io.papermc.fill.model.response.PublishResponse;
@@ -46,6 +50,8 @@ import io.papermc.fill.util.http.Responses;
 import io.swagger.v3.oas.annotations.Hidden;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,16 +80,15 @@ import org.springframework.web.multipart.MultipartFile;
 @NullMarked
 @RestController
 public class PublishController {
+  private static final boolean CREATE_MISSING_VERSIONS = true;
   private static final Logger LOGGER = LoggerFactory.getLogger(PublishController.class);
 
   private final ProjectRepository projects;
+  private final FamilyRepository families;
   private final VersionRepository versions;
   private final BuildRepository builds;
-
   private final StorageService storage;
-
   private final Set<BuildListener> buildListeners;
-
   private final LoadingCache<UUID, StagingInstance> instances = Caffeine.newBuilder()
     .expireAfterAccess(Duration.ofMinutes(5))
     .build(_ -> new StagingInstance());
@@ -91,12 +96,14 @@ public class PublishController {
   @Autowired
   public PublishController(
     final ProjectRepository projects,
+    final FamilyRepository families,
     final VersionRepository versions,
     final BuildRepository builds,
     final StorageService storage,
     final Set<BuildListener> buildListeners
   ) {
     this.projects = projects;
+    this.families = families;
     this.versions = versions;
     this.builds = builds;
     this.storage = storage;
@@ -148,8 +155,27 @@ public class PublishController {
       this.instances.invalidate(request.id());
     }
 
+    final Instant createdAt = request.time();
+
     final ProjectEntity project = this.projects.findByKey(request.project()).orElseThrow(ProjectNotFoundException::new);
-    final VersionEntity version = this.versions.findByProjectAndKey(project, request.version()).orElseThrow(VersionNotFoundException::new);
+    final FamilyEntity family = this.families.findByProjectAndKey(project, request.family()).orElseThrow(FamilyNotFoundException::new);
+    VersionEntity version = this.versions.findByProjectAndKey(project, request.version()).orElse(null);
+    if (version == null) {
+      if (CREATE_MISSING_VERSIONS) {
+        version = this.versions.save(VersionEntity.create(
+          new ObjectId(Date.from(createdAt)),
+          createdAt,
+          project,
+          family,
+          request.version(),
+          null,
+          Support.SUPPORTED,
+          null
+        ));
+      } else {
+        throw new VersionNotFoundException();
+      }
+    }
 
     if (this.builds.findByVersionAndNumber(version, request.build()).isPresent()) {
       throw createPublishFailedException(request, "Build already exists", new DuplicateBuildException());
@@ -160,8 +186,8 @@ public class PublishController {
     final Map<String, Download> downloads = request.downloads();
 
     final BuildEntity build = BuildEntity.create(
-      new ObjectId(),
-      request.time(),
+      new ObjectId(Date.from(createdAt)),
+      createdAt,
       project,
       version,
       request.build(),

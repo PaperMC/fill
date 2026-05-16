@@ -48,8 +48,9 @@ import io.papermc.fill.graphql.payload.UpdateVersionPayload;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Support;
-import io.papermc.fill.model.SupportStatus;
+import java.time.Clock;
 import java.time.Instant;
+import java.util.Date;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +62,7 @@ import org.springframework.stereotype.Controller;
 @Controller
 @NullMarked
 public class GraphMutationController {
+  private final Clock clock;
   private final ProjectRepository projects;
   private final FamilyRepository families;
   private final VersionRepository versions;
@@ -68,11 +70,13 @@ public class GraphMutationController {
 
   @Autowired
   public GraphMutationController(
+    final Clock clock,
     final ProjectRepository projects,
     final FamilyRepository families,
     final VersionRepository versions,
     final BuildRepository builds
   ) {
+    this.clock = clock;
     this.projects = projects;
     this.families = families;
     this.versions = versions;
@@ -89,9 +93,10 @@ public class GraphMutationController {
     if (this.families.findByProjectAndKey(project, input.key()).isPresent()) {
       throw new DuplicateFamilyException();
     }
+    final Instant createdAt = this.clock.instant();
     final FamilyEntity entity = this.families.save(FamilyEntity.create(
-      new ObjectId(),
-      Instant.now(),
+      new ObjectId(Date.from(createdAt)),
+      createdAt,
       project,
       input.key(),
       input.java()
@@ -141,14 +146,15 @@ public class GraphMutationController {
     if (this.versions.findByProjectAndKey(project, input.key()).isPresent()) {
       throw new DuplicateVersionException();
     }
+    final Instant createdAt = this.clock.instant();
     final VersionEntity entity = this.versions.save(VersionEntity.create(
-      new ObjectId(),
-      Instant.now(),
+      new ObjectId(Date.from(createdAt)),
+      createdAt,
       project,
       family,
       input.key(),
       null,
-      new Support(SupportStatus.SUPPORTED, null),
+      Support.SUPPORTED,
       input.java()
     ));
     return new CreateVersionPayload(entity);

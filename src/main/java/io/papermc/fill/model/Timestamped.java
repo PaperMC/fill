@@ -21,8 +21,8 @@ import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public interface Timestamped {
-  Comparator<? super Timestamped> COMPARATOR_CREATED_AT = Comparator.comparing(Timestamped::createdAt);
-  Comparator<? super Timestamped> COMPARATOR_CREATED_AT_REVERSE = COMPARATOR_CREATED_AT.reversed();
+  Comparator<? super Timestamped> CREATED_AT_ASC = Comparator.comparing(Timestamped::createdAt);
+  Comparator<? super Timestamped> CREATED_AT_DESC = CREATED_AT_ASC.reversed();
 
   Instant createdAt();
 

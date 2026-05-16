@@ -21,7 +21,7 @@ import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public interface Keyed {
-  Comparator<? super Keyed> COMPARATOR_KEY = Comparator.comparing(Keyed::key);
+  Comparator<? super Keyed> KEY_ASC = Comparator.comparing(Keyed::key);
 
   static List<String> keysOf(final List<? extends Keyed> keys) {
     return keys.stream().map(Keyed::key).toList();

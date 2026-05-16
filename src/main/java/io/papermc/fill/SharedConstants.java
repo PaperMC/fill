@@ -29,6 +29,9 @@ public final class SharedConstants {
   public static final String API_V2_ROUTE_PREFIX = "/v2/";
   public static final String API_V3_ROUTE_PREFIX = "/v3/";
 
+  public static final Instant API_V1_SUNSET = LocalDate.of(2021, Month.NOVEMBER, 24)
+    .atStartOfDay(ZoneOffset.UTC)
+    .toInstant();
   public static final Instant API_V2_CUTOFF = LocalDate.of(2025, Month.DECEMBER, 31)
     .atStartOfDay(ZoneOffset.UTC)
     .toInstant();

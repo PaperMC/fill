@@ -34,9 +34,9 @@ import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.DownloadWithUrl;
-import io.papermc.fill.model.Family;
 import io.papermc.fill.model.Keyed;
 import io.papermc.fill.model.Project;
+import io.papermc.fill.model.Timestamped;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.model.response.ErrorResponse;
 import io.papermc.fill.model.response.v3.BuildResponse;
@@ -95,7 +95,6 @@ public class Meta3Controller {
   private final FamilyRepository families;
   private final VersionRepository versions;
   private final BuildRepository builds;
-
   private final StorageService storage;
 
   @Autowired
@@ -137,7 +136,7 @@ public class Meta3Controller {
   public ResponseEntity<?> getProjects() {
     final List<ProjectEntity> projects = this.projects.findAll()
       .stream()
-      .sorted(Project.COMPARATOR_KEY)
+      .sorted(Keyed.KEY_ASC)
       .toList();
     final ProjectsResponse response = new ProjectsResponse(
       Lists.transform(projects, this::createProjectResponse)
@@ -387,11 +386,11 @@ public class Meta3Controller {
     final Map<String, List<String>> versions = this.versions.findAllByProject(project)
       .collect(Collectors.groupingBy(
         version -> families.get(version.family()),
-        () -> new TreeMap<>(Family.COMPARATOR_CREATED_AT_REVERSE),
+        () -> new TreeMap<>(Timestamped.CREATED_AT_DESC),
         Collectors.collectingAndThen(
           Collectors.toList(),
           list -> {
-            list.sort(Version.COMPARATOR_CREATED_AT_REVERSE);
+            list.sort(Timestamped.CREATED_AT_DESC);
             return list;
           }
         )

@@ -168,7 +168,7 @@ public class DiscordNotificationPublisher implements BuildListener {
 
   private @Nullable Button createDiffButton(final VersionEntity version, final GitRepository repository, final BuildWithDownloads<Download> build) {
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
-      .sorted(Build.COMPARATOR_NUMBER)
+      .sorted(Build.NUMBER_ASC)
       .toList();
     final Build buildBefore = getBuildBefore(builds);
     if (buildBefore != null && !buildBefore.commits().isEmpty() && !build.commits().isEmpty()) {

@@ -27,6 +27,7 @@ import io.papermc.fill.exception.DownloadFailedException;
 import io.papermc.fill.exception.DownloadNotFoundException;
 import io.papermc.fill.exception.ProjectNotFoundException;
 import io.papermc.fill.exception.StorageReadException;
+import io.papermc.fill.exception.SunsetException;
 import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.service.StorageService;
@@ -34,6 +35,7 @@ import io.papermc.fill.util.http.Caching;
 import io.papermc.fill.util.http.Responses;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.constraints.PositiveOrZero;
+import java.time.Clock;
 import java.time.Duration;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,19 +54,21 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class Data2Controller {
   private static final Duration CACHE_LENGTH_DOWNLOAD = Duration.ofDays(7);
 
+  private final Clock clock;
   private final ProjectRepository projects;
   private final VersionRepository versions;
   private final BuildRepository builds;
-
   private final StorageService storage;
 
   @Autowired
   public Data2Controller(
+    final Clock clock,
     final ProjectRepository projects,
     final VersionRepository versions,
     final BuildRepository builds,
     final StorageService storage
   ) {
+    this.clock = clock;
     this.projects = projects;
     this.versions = versions;
     this.builds = builds;
@@ -83,6 +87,9 @@ public class Data2Controller {
     @PathVariable("download")
     final String downloadName
   ) {
+    if (this.isSunset()) {
+      throw new SunsetException();
+    }
     final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
     final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
     if (version.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
@@ -123,5 +130,9 @@ public class Data2Controller {
     }
 
     throw new DownloadNotFoundException();
+  }
+
+  private boolean isSunset() {
+    return this.clock.instant().isAfter(SharedConstants.API_V2_SUNSET);
   }
 }

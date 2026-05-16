@@ -18,7 +18,6 @@ package io.papermc.fill.filter;
 import io.papermc.fill.SharedConstants;
 import io.papermc.fill.api.ApiRoute;
 import io.papermc.fill.api.ApiVersion;
-import io.papermc.fill.exception.SunsetException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,23 +27,12 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Component
 @NullMarked
 public class SunsetFilter extends OncePerRequestFilter {
-  private final HandlerExceptionResolver handlerExceptionResolver;
-
-  @Autowired
-  public SunsetFilter(
-    final HandlerExceptionResolver handlerExceptionResolver
-  ) {
-    this.handlerExceptionResolver = handlerExceptionResolver;
-  }
-
   @Override
   protected void doFilterInternal(
     final HttpServletRequest request,
@@ -52,15 +40,14 @@ public class SunsetFilter extends OncePerRequestFilter {
     final FilterChain filterChain
   ) throws IOException, ServletException {
     if (ApiRoute.isApiRoute(request, ApiVersion.V2)) {
-      // https://datatracker.ietf.org/doc/html/rfc8594
-      response.setHeader("Sunset", DateTimeFormatter.RFC_1123_DATE_TIME.format(SharedConstants.API_V2_SUNSET.atZone(ZoneOffset.UTC)));
-
-      if (Instant.now().isAfter(SharedConstants.API_V2_SUNSET)) {
-        this.handlerExceptionResolver.resolveException(request, response, null, new SunsetException());
-        return;
-      }
+      this.addSunsetHeader(response, SharedConstants.API_V2_SUNSET);
     }
 
     filterChain.doFilter(request, response);
+  }
+
+  // https://datatracker.ietf.org/doc/html/rfc8594
+  private void addSunsetHeader(final HttpServletResponse response, final Instant instant) {
+    response.setHeader("Sunset", DateTimeFormatter.RFC_1123_DATE_TIME.format(instant.atZone(ZoneOffset.UTC)));
   }
 }

@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.model;
+package io.papermc.fill.configuration;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDate;
+import java.time.Clock;
+import java.time.ZoneOffset;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@Configuration
 @NullMarked
-public record Support(
-  SupportStatus status,
-  @Schema(nullable = true)
-  @Nullable LocalDate end
-) {
-  public static final Support SUPPORTED = new Support(SupportStatus.SUPPORTED, null);
+public class TimeConfiguration {
+  @Bean
+  public Clock clock() {
+    return Clock.system(ZoneOffset.UTC);
+  }
 }
