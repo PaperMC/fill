@@ -2,7 +2,7 @@
 indra = "4.0.0"
 
 [plugins]
-gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version = "2.5.7" }
+gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version = "3.0.3" }
 indra = { id = "net.kyori.indra", version.ref = "indra" }
 indra-checkstyle = { id = "net.kyori.indra.checkstyle", version.ref = "indra" }
 indra-git = { id = "net.kyori.indra.git", version.ref = "indra" }
