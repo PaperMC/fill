@@ -2,10 +2,12 @@
 # - The family id
 # - The minimum required Java version and any recommended Java flags
 query {
-  project(id: "paper") {
+  project(key: "paper") {
     id
+    key
     families {
       id
+      key
       java {
         version {
           minimum

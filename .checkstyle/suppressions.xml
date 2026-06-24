@@ -5,4 +5,6 @@
   <suppress files="src[\\/]main[\\/]java[\\/]io[\\/]papermc[\\/]fill[\\/]controller[\\/]advice[\\/]ExceptionRestControllerAdvice.java" checks="Indentation"/>
   <suppress files="src[\\/]main[\\/]java[\\/].*" checks="MissingJavadocMethod"/>
   <suppress files="src[\\/]main[\\/]java[\\/].*" checks="MissingJavadocType"/>
+  <suppress files="src[\\/]test[\\/]java[\\/].*" checks="MissingJavadocMethod"/>
+  <suppress files="src[\\/]test[\\/]java[\\/].*" checks="MissingJavadocType"/>
 </suppressions>

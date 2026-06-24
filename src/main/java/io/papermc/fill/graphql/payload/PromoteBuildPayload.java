@@ -15,11 +15,13 @@
  */
 package io.papermc.fill.graphql.payload;
 
+import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.VersionEntity;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public record PromoteBuildPayload(
-  VersionEntity version
+  VersionEntity version,
+  BuildEntity build
 ) {
 }

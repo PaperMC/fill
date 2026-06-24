@@ -25,13 +25,16 @@ import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 @CompoundIndex(def = "{'name': 1}", unique = true)
 @Document(collection = "projects")
 @NullMarked
 public class ProjectEntity extends AbstractEntity implements Project {
+  @Field("name")
+  private String key;
+  @Field("displayName")
   private String name;
-  private String displayName;
   private GitRepository gitRepository;
   private URI logoUrl;
   private List<DiscordNotificationChannel> discordNotificationChannels;
@@ -43,8 +46,8 @@ public class ProjectEntity extends AbstractEntity implements Project {
   @VisibleForTesting
   public static ProjectEntity create(
     final ObjectId _id,
+    final String key,
     final String name,
-    final String displayName,
     final GitRepository gitRepository,
     final URI logoUrl,
     final List<DiscordNotificationChannel> discordNotificationChannels,
@@ -52,8 +55,8 @@ public class ProjectEntity extends AbstractEntity implements Project {
   ) {
     final ProjectEntity entity = new ProjectEntity();
     entity._id = _id;
+    entity.key = key;
     entity.name = name;
-    entity.displayName = displayName;
     entity.gitRepository = gitRepository;
     entity.logoUrl = logoUrl;
     entity.discordNotificationChannels = discordNotificationChannels;
@@ -63,12 +66,17 @@ public class ProjectEntity extends AbstractEntity implements Project {
 
   @Override
   public String id() {
-    return this.name;
+    return this._id.toHexString();
+  }
+
+  @Override
+  public String key() {
+    return this.key;
   }
 
   @Override
   public String name() {
-    return this.displayName;
+    return this.name;
   }
 
   public GitRepository gitRepository() {

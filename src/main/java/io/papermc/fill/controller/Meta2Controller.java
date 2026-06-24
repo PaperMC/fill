@@ -16,7 +16,9 @@
 package io.papermc.fill.controller;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.papermc.fill.SharedConstants;
 import io.papermc.fill.configuration.properties.ApplicationApiProperties;
+import io.papermc.fill.database.AbstractEntity;
 import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.FamilyEntity;
@@ -34,6 +36,7 @@ import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.Family;
+import io.papermc.fill.model.Keyed;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.model.response.v2.BuildResponse;
 import io.papermc.fill.model.response.v2.BuildsResponse;
@@ -51,7 +54,9 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -100,7 +105,7 @@ public class Meta2Controller {
   @GetMapping("/v2/projects")
   public ResponseEntity<?> getProjects() {
     final List<ProjectEntity> projects = this.projects.findAll();
-    final ProjectsResponse response = new ProjectsResponse(projects.stream().map(ProjectEntity::id).toList());
+    final ProjectsResponse response = new ProjectsResponse(Keyed.keysOf(projects));
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_PROJECTS));
   }
 
@@ -108,16 +113,22 @@ public class Meta2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}")
   public ResponseEntity<?> getProject(
     @PathVariable("project")
-    final String projectId
+    final String projectKey
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
-    final List<FamilyEntity> families = this.families.findAllByProject(project).toList();
-    final List<VersionEntity> versions = this.versions.findAllByProject(project).toList();
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
+    final List<FamilyEntity> families = this.families.findAllByProject(project)
+      .filter(family -> family.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
+      .sorted(Family.COMPARATOR_CREATED_AT)
+      .toList();
+    final List<VersionEntity> versions = this.versions.findAllByProject(project)
+      .filter(version -> version.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
+      .sorted(Version.COMPARATOR_CREATED_AT)
+      .toList();
     final ProjectResponse response = new ProjectResponse(
-      project.id(),
+      project.key(),
       project.name(),
-      families.stream().sorted(Family.COMPARATOR_CREATED_AT).map(FamilyEntity::id).toList(),
-      versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::id).toList()
+      Keyed.keysOf(families),
+      Keyed.keysOf(versions)
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_PROJECT));
   }
@@ -126,18 +137,24 @@ public class Meta2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/version_group/{family:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}")
   public ResponseEntity<?> getFamily(
     @PathVariable("project")
-    final String projectId,
+    final String projectKey,
     @PathVariable("family")
-    final String familyId
+    final String familyKey
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
-    final FamilyEntity family = this.families.findByProjectAndName(project, familyId).orElseThrow(VersionNotFoundException::new);
-    final List<VersionEntity> versions = this.versions.findAllByFamily(family).toList();
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
+    final FamilyEntity family = this.families.findByProjectAndKey(project, familyKey).orElseThrow(FamilyNotFoundException::new);
+    if (family.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
+      throw new FamilyNotFoundException();
+    }
+    final List<VersionEntity> versions = this.versions.findAllByFamily(family)
+      .filter(version -> version.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
+      .sorted(Version.COMPARATOR_CREATED_AT)
+      .toList();
     final FamilyResponse response = new FamilyResponse(
-      project.id(),
+      project.key(),
       project.name(),
-      family.id(),
-      versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::id).toList()
+      family.key(),
+      Keyed.keysOf(versions)
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_FAMILY));
   }
@@ -146,29 +163,38 @@ public class Meta2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/version_group/{family:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}/builds")
   public ResponseEntity<?> getFamilyBuilds(
     @PathVariable("project")
-    final String projectId,
+    final String projectKey,
     @PathVariable("family")
-    final String familyId
+    final String familyKey
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
-    final FamilyEntity family = this.families.findByProjectAndName(project, familyId).orElseThrow(FamilyNotFoundException::new);
-    final List<VersionEntity> versions = this.versions.findAllByFamily(family).toList();
-    final List<BuildEntity> builds = this.builds.findAllByVersionIn(versions)
-      .sorted(Build.COMPARATOR_ID)
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
+    final FamilyEntity family = this.families.findByProjectAndKey(project, familyKey).orElseThrow(FamilyNotFoundException::new);
+    if (family.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
+      throw new FamilyNotFoundException();
+    }
+    final List<VersionEntity> versions = this.versions.findAllByFamily(family)
+      .filter(version -> version.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
+      .sorted(Version.COMPARATOR_CREATED_AT)
+      .toList();
+    final Map<ObjectId, VersionEntity> versionsById = versions.stream()
+      .collect(Collectors.toMap(AbstractEntity::_id, Function.identity()));
+    final List<BuildEntity> builds = this.builds.findAllByVersionIn(versionsById.keySet())
+      .filter(build -> build.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
+      .sorted(Build.COMPARATOR_NUMBER)
       .toList();
     final FamilyBuildsResponse response = new FamilyBuildsResponse(
-      project.id(),
+      project.key(),
       project.name(),
-      family.id(),
-      versions.stream().sorted(Version.COMPARATOR_CREATED_AT).map(VersionEntity::id).toList(),
+      family.key(),
+      Keyed.keysOf(versions),
       builds.stream().map(build -> new FamilyBuildsResponse.Build(
-        build.version().id(),
-        build.id(),
+        versionsById.get(build.version()).key(),
+        build.number(),
         build.createdAt(),
         build.channel(),
         isPromoted(build),
         toChanges(build.commits()),
-        this.toDownloads(project.id(), build.downloads())
+        this.toDownloads(project.key(), build.downloads())
       )).toList()
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_FAMILY_BUILDS));
@@ -178,20 +204,24 @@ public class Meta2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/versions/{version:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}")
   public ResponseEntity<?> getVersion(
     @PathVariable("project")
-    final String projectId,
+    final String projectKey,
     @PathVariable("version")
-    final String versionId
+    final String versionKey
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
+    if (version.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
+      throw new VersionNotFoundException();
+    }
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
-      .sorted(Build.COMPARATOR_ID)
+      .filter(build -> build.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
+      .sorted(Build.COMPARATOR_NUMBER)
       .toList();
     final VersionResponse response = new VersionResponse(
-      project.id(),
+      project.key(),
       project.name(),
-      version.id(),
-      builds.stream().map(BuildEntity::id).toList()
+      version.key(),
+      builds.stream().map(BuildEntity::number).toList()
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_VERSION));
   }
@@ -200,26 +230,30 @@ public class Meta2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/versions/{version:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}/builds")
   public ResponseEntity<?> getVersionBuilds(
     @PathVariable("project")
-    final String projectId,
+    final String projectKey,
     @PathVariable("version")
-    final String versionId
+    final String versionKey
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
+    if (version.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
+      throw new VersionNotFoundException();
+    }
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
-      .sorted(Build.COMPARATOR_ID)
+      .filter(build -> build.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
+      .sorted(Build.COMPARATOR_NUMBER)
       .toList();
     final BuildsResponse response = new BuildsResponse(
-      project.id(),
+      project.key(),
       project.name(),
-      version.id(),
+      version.key(),
       builds.stream().map(build -> new BuildsResponse.Build(
-        build.id(),
+        build.number(),
         build.createdAt(),
         build.channel(),
         isPromoted(build),
         toChanges(build.commits()),
-        this.toDownloads(project.id(), build.downloads())
+        this.toDownloads(project.key(), build.downloads())
       )).toList()
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_VERSION_BUILDS));
@@ -229,26 +263,32 @@ public class Meta2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/versions/{version:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}/builds/{build:\\d+}")
   public ResponseEntity<?> getVersionBuild(
     @PathVariable("project")
-    final String projectId,
+    final String projectKey,
     @PathVariable("version")
-    final String versionId,
+    final String versionKey,
     @PathVariable("build")
     @PositiveOrZero
-    final int buildId
+    final int buildNumber
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
-    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(BuildNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
+    if (version.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
+      throw new VersionNotFoundException();
+    }
+    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildNumber).orElseThrow(BuildNotFoundException::new);
+    if (build.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
+      throw new BuildNotFoundException();
+    }
     final BuildResponse response = new BuildResponse(
-      project.id(),
+      project.key(),
       project.name(),
-      version.id(),
-      build.id(),
+      version.key(),
+      build.number(),
       build.createdAt(),
       build.channel(),
       isPromoted(build),
       toChanges(build.commits()),
-      this.toDownloads(project.id(), build.downloads())
+      this.toDownloads(project.key(), build.downloads())
     );
     return Responses.ok(response, Caching.publicShared(CACHE_LENGTH_BUILD));
   }

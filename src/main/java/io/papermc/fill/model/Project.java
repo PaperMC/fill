@@ -15,10 +15,8 @@
  */
 package io.papermc.fill.model;
 
-import java.util.Comparator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public interface Project extends Identified, Named {
-  Comparator<Project> COMPARATOR_ID = Comparator.comparing(Project::id);
+public interface Project extends Identified, Keyed, Named {
 }

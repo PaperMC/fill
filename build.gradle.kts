@@ -12,6 +12,7 @@ plugins {
   alias(libs.plugins.indra.checkstyle)
   alias(libs.plugins.indra.git)
   alias(libs.plugins.jib)
+  alias(libs.plugins.sentry)
   alias(libs.plugins.spotless)
   alias(libs.plugins.spring.boot)
   alias(libs.plugins.spring.deps)
@@ -21,7 +22,7 @@ indra {
   apache2License()
 
   javaVersions {
-    target(23)
+    target(25)
   }
 }
 
@@ -69,7 +70,7 @@ jib {
     image = "ghcr.io/papermc/fill"
     tags = setOf(
       "latest",
-      "${indraGit.branchName()}-${indraGit.commit()?.name()?.take(7)}-${Instant.now().epochSecond}"
+      "${indraGit.branchName().get()}-${indraGit.commit().get().name()?.take(7)}-${Instant.now().epochSecond}"
     )
   }
 }
@@ -79,6 +80,11 @@ spotless {
     licenseHeaderFile(rootProject.file("license_header.txt"))
     targetExclude("build/generated/**/*.java")
   }
+}
+
+tasks.named("sourcesJar") {
+  dependsOn(tasks.named("collectExternalDependenciesForSentry"))
+  dependsOn(tasks.named("generateSentryDebugMetaPropertiesjava"))
 }
 
 repositories {
@@ -97,18 +103,18 @@ dependencies {
 
   developmentOnly("org.springframework.boot:spring-boot-devtools")
 
-  implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.15.0")
-  implementation("com.bucket4j:bucket4j_jdk17-core:8.15.0")
-  implementation("com.discord4j:discord4j-core:3.3.0-RC3")
-  implementation("com.github.ben-manes.caffeine:caffeine:3.2.2")
-  implementation("com.google.guava:guava:33.5.0-jre")
+  implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.18.0")
+  implementation("com.bucket4j:bucket4j_jdk17-core:8.18.0")
+  implementation("com.discord4j:discord4j-core:3.3.2")
+  implementation("com.github.ben-manes.caffeine:caffeine:3.2.4")
+  implementation("com.google.guava:guava:33.6.0-jre")
   implementation("com.graphql-java:graphql-java-extended-scalars:24.0")
   implementation("io.jsonwebtoken:jjwt-api:0.13.0")
   implementation("io.jsonwebtoken:jjwt-impl:0.13.0")
   implementation("io.jsonwebtoken:jjwt-jackson:0.13.0")
   implementation("io.micrometer:micrometer-registry-prometheus")
-  implementation("org.apache.commons:commons-text:1.14.0")
-  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
+  implementation("org.apache.commons:commons-text:1.15.0")
+  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
   implementation("org.springframework.boot:spring-boot-starter-graphql")
@@ -116,7 +122,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-validation")
   implementation("org.springframework.boot:spring-boot-starter-web")
-  implementation("software.amazon.awssdk:s3:2.34.5")
+  implementation("software.amazon.awssdk:s3:2.44.2")
 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.graphql:spring-graphql-test")

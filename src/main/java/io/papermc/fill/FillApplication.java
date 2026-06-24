@@ -33,7 +33,7 @@ import org.springframework.data.mongodb.config.EnableMongoAuditing;
 @NullMarked
 @SpringBootApplication
 public class FillApplication {
-  public static void main(final String[] args) {
+  static void main(final String[] args) {
     SpringApplication.run(FillApplication.class, args);
   }
 }

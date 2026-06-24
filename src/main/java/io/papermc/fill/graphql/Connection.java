@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.database;
+package io.papermc.fill.graphql;
 
-import org.bson.types.ObjectId;
+import java.util.List;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public record BuildIdentity(
-  ObjectId _id,
-  ObjectId version,
-  int number
+public record Connection<T>(
+  List<Edge<T>> edges,
+  List<T> nodes,
+  PageInfo pageInfo,
+  int totalCount
 ) {
 }

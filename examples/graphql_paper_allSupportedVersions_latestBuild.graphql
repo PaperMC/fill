@@ -9,31 +9,44 @@
 #     - file size (in bytes)
 #     - direct download url
 query {
-  project(id: "paper") {
+  project(key: "paper") {
     id
-    versions(filterBy: {supportStatus: SUPPORTED}) {
-      id
-      support {
-        status
-        end
-      }
-      java {
-        version {
-          minimum
-        }
-        flags {
-          recommended
-        }
-      }
-      builds(last: 1) {
-        id
-        download(name: "server:default") {
-          name
-          checksums {
-            sha256
+    key
+    versions(filterBy: {supportStatus: SUPPORTED}, orderBy: {direction: DESC}, first: 1) {
+      edges {
+        node {
+          id
+          key
+          support {
+            status
+            end
           }
-          size
-          url
+          java {
+            version {
+              minimum
+            }
+            flags {
+              recommended
+            }
+          }
+          builds(orderBy: {direction: DESC}, first: 1) {
+            edges {
+              node {
+                id
+                number
+                createdAt
+                channel
+                download(key: "server:default") {
+                  name
+                  checksums {
+                    sha256
+                  }
+                  size
+                  url
+                }
+              }
+            }
+          }
         }
       }
     }

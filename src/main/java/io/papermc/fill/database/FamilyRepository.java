@@ -20,15 +20,28 @@ import java.util.stream.Stream;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @NullMarked
 @Repository
 public interface FamilyRepository extends MongoRepository<FamilyEntity, ObjectId> {
-  Stream<FamilyEntity> findAllByProject(final ProjectEntity project);
+  default Stream<FamilyEntity> findAllByProject(final ProjectEntity project) {
+    return this.findAllByProject(project._id());
+  }
 
-  Optional<FamilyEntity> findByProjectAndName(
+  @Query(sort = "{'createdAt': -1}")
+  Stream<FamilyEntity> findAllByProject(final ObjectId project);
+
+  default Optional<FamilyEntity> findByProjectAndKey(
     final ProjectEntity project,
-    final String name
+    final String key
+  ) {
+    return this.findByProjectAndKey(project._id(), key);
+  }
+
+  Optional<FamilyEntity> findByProjectAndKey(
+    final ObjectId project,
+    final String key
   );
 }

@@ -28,7 +28,7 @@ import org.apache.commons.text.StringSubstitutor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.util.MimeType;
 
 @NullMarked
 public interface StorageService {
@@ -58,9 +58,9 @@ public interface StorageService {
     return StringSubstitutor.replace(
       template,
       Map.of(
-        PROJECT_NAME, project.id(),
-        VERSION_NAME, version.id(),
-        BUILD_NUMBER, build.id(),
+        PROJECT_NAME, project.key(),
+        VERSION_NAME, version.key(),
+        BUILD_NUMBER, build.number(),
         DOWNLOAD_FILENAME, download.name(),
         DOWNLOAD_SHA256, download.checksums().sha256()
       )
@@ -80,7 +80,7 @@ public interface StorageService {
     final BuildWithDownloads<Download> build,
     final Download download,
     final byte[] content,
-    final MediaType type
+    final MimeType type
   ) throws StorageWriteException;
 
   @Deprecated

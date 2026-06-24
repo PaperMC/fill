@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.exception;
+package io.papermc.fill.graphql;
 
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public class DiscontinuedException extends AppException {
-  public DiscontinuedException() {
-    super("Discontinued.");
-  }
+public record Edge<T>(
+  T node,
+  String cursor
+) {
 }

@@ -20,6 +20,6 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public record DeleteFamilyInput(
   String project,
-  String id
+  String key
 ) {
 }

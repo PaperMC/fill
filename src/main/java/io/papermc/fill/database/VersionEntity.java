@@ -25,7 +25,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.DocumentReference;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 @CompoundIndex(def = "{'project': 1}")
 @CompoundIndex(def = "{'project': 1, 'createdAt': -1}")
@@ -35,11 +35,10 @@ import org.springframework.data.mongodb.core.mapping.DocumentReference;
 @Document(collection = "versions")
 @NullMarked
 public class VersionEntity extends AbstractEntity implements Version {
-  @DocumentReference
-  private ProjectEntity project;
-  @DocumentReference
-  private FamilyEntity family;
-  private String name;
+  private ObjectId project;
+  private ObjectId family;
+  @Field("name")
+  private String key;
   private @Nullable GitRepository gitRepository;
   private Support support;
   private @Nullable Java java;
@@ -54,7 +53,7 @@ public class VersionEntity extends AbstractEntity implements Version {
     final Instant createdAt,
     final ProjectEntity project,
     final FamilyEntity family,
-    final String name,
+    final String key,
     final @Nullable GitRepository gitRepository,
     final Support support,
     final @Nullable Java java
@@ -62,26 +61,31 @@ public class VersionEntity extends AbstractEntity implements Version {
     final VersionEntity entity = new VersionEntity();
     entity._id = _id;
     entity.createdAt = createdAt;
-    entity.project = project;
-    entity.family = family;
-    entity.name = name;
+    entity.project = project._id();
+    entity.family = family._id();
+    entity.key = key;
     entity.gitRepository = gitRepository;
     entity.support = support;
     entity.java = java;
     return entity;
   }
 
-  public ProjectEntity project() {
+  public ObjectId project() {
     return this.project;
   }
 
-  public FamilyEntity family() {
+  public ObjectId family() {
     return this.family;
   }
 
   @Override
   public String id() {
-    return this.name;
+    return this._id.toHexString();
+  }
+
+  @Override
+  public String key() {
+    return this.key;
   }
 
   public @Nullable GitRepository gitRepository() {

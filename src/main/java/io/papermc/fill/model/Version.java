@@ -15,21 +15,19 @@
  */
 package io.papermc.fill.model;
 
-import java.util.Comparator;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.function.Predicate;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public interface Version extends Identified, Timestamped {
-  Comparator<Version> COMPARATOR_CREATED_AT = Comparator.comparing(Version::createdAt);
-  Comparator<Version> COMPARATOR_CREATED_AT_REVERSE = COMPARATOR_CREATED_AT.reversed();
-
+public interface Version extends Identified, Keyed, Timestamped {
   Support support();
 
   static Predicate<Version> isSupportStatus(final @Nullable SupportStatus status) {
     return version -> status == null || version.support().status() == status;
   }
 
+  @Schema(nullable = true)
   @Nullable Java java();
 }

@@ -18,7 +18,7 @@ package io.papermc.fill.model;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public enum VersionType {
-  RELEASE,
-  SNAPSHOT,
+public enum OrderDirection {
+  ASC,
+  DESC,
 }

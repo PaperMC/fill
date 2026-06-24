@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.controller;
 
+import io.papermc.fill.SharedConstants;
 import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.ProjectEntity;
@@ -73,18 +74,24 @@ public class Data2Controller {
   @GetMapping("/v2/projects/{project:[a-z]+}/versions/{version:[0-9.]+-?(?:pre|SNAPSHOT)?(?:[0-9.]+)?}/builds/{build:\\d+}/downloads/{download:[a-zA-Z0-9._-]+}")
   public ResponseEntity<?> getDownload(
     @PathVariable("project")
-    final String projectId,
+    final String projectKey,
     @PathVariable("version")
-    final String versionId,
+    final String versionKey,
     @PathVariable("build")
     @PositiveOrZero
-    final int buildId,
+    final int buildNumber,
     @PathVariable("download")
     final String downloadName
   ) {
-    final ProjectEntity project = this.projects.findByName(projectId).orElseThrow(ProjectNotFoundException::new);
-    final VersionEntity version = this.versions.findByProjectAndName(project, versionId).orElseThrow(VersionNotFoundException::new);
-    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildId).orElseThrow(BuildNotFoundException::new);
+    final ProjectEntity project = this.projects.findByKey(projectKey).orElseThrow(ProjectNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndKey(project, versionKey).orElseThrow(VersionNotFoundException::new);
+    if (version.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
+      throw new VersionNotFoundException();
+    }
+    final BuildEntity build = this.builds.findByVersionAndNumber(version, buildNumber).orElseThrow(BuildNotFoundException::new);
+    if (build.createdAt().isAfter(SharedConstants.API_V2_CUTOFF)) {
+      throw new BuildNotFoundException();
+    }
 
     final Download download = build.getDownloadByName(downloadName);
     if (download != null) {
@@ -97,7 +104,7 @@ public class Data2Controller {
       if (object != null) {
         return Responses.ok(new ByteArrayResource(object.content()), headers -> {
           headers.putAll(object.headers());
-          if (!headers.containsKey(HttpHeaders.CACHE_CONTROL)) {
+          if (!headers.containsHeader(HttpHeaders.CACHE_CONTROL)) {
             headers.setCacheControl(Caching.publicShared(CACHE_LENGTH_DOWNLOAD));
           }
           headers.setContentDisposition(
@@ -105,7 +112,7 @@ public class Data2Controller {
               .filename(download.name())
               .build()
           );
-          if (!headers.containsKey(HttpHeaders.ETAG)) {
+          if (!headers.containsHeader(HttpHeaders.ETAG)) {
             headers.setETag(String.format(
               "\"%s\"",
               download.checksums().sha256()

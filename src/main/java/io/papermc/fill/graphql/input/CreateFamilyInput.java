@@ -21,7 +21,7 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public record CreateFamilyInput(
   String project,
-  String id,
+  String key,
   Java java
 ) {
 }

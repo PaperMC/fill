@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.graphql.input;
+package io.papermc.fill.graphql;
 
-import io.papermc.fill.model.BuildChannel;
+import io.papermc.fill.model.SupportStatus;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public record BuildFilters(
-  @Nullable BuildChannel channel
+public record VersionFilters(
+  @Nullable String familyKey,
+  @Nullable SupportStatus supportStatus
 ) {
 }

@@ -33,9 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MimeType;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -57,12 +57,13 @@ public class StorageServiceImpl implements StorageService {
 
   @Autowired
   public StorageServiceImpl(
-    final ApplicationApiProperties properties,
-    final RestClient.Builder http
+    final ApplicationApiProperties properties
   ) {
     this.properties = properties;
     this.s3 = S3Configuration.createClient(properties.storage().s3());
-    this.http = http.build();
+    this.http = RestClient.builder()
+      .defaultHeader(HttpHeaders.USER_AGENT, "Fill (Internal)")
+      .build();
   }
 
   @Override
@@ -82,7 +83,7 @@ public class StorageServiceImpl implements StorageService {
     final BuildWithDownloads<Download> build,
     final Download download,
     final byte[] content,
-    final MediaType type
+    final MimeType type
   ) throws StorageWriteException {
     final ApplicationApiProperties.Storage properties = this.properties.storage();
     final String path = StorageService.createPath(properties.path(), project, version, build, download);
@@ -114,15 +115,12 @@ public class StorageServiceImpl implements StorageService {
           .bucket(properties.s3().bucket())
           .key(path)
           .build();
-        final ResponseInputStream<GetObjectResponse> response;
-        try {
-          response = this.s3.getObject(request);
+        try (final ResponseInputStream<GetObjectResponse> response = this.s3.getObject(request)) {
+          LOGGER.debug("Retrieved object {} from bucket", download);
+          final byte[] bytes = response.readAllBytes();
+          yield new Asset(bytes, HttpHeaders.EMPTY);
         } catch (final S3Exception e) {
           throw createStorageReadException(download, path, "s3 exception", e);
-        }
-        LOGGER.debug("Retrieved object {} from bucket", download);
-        try {
-          yield new Asset(response.readAllBytes(), HttpHeaders.EMPTY);
         } catch (final IOException e) {
           throw createStorageReadException(download, path, "i/o exception", e);
         }
@@ -132,7 +130,6 @@ public class StorageServiceImpl implements StorageService {
         try {
           final ResponseEntity<byte[]> response = this.http.get()
             .uri(uri)
-            .header(HttpHeaders.USER_AGENT, "Fill (Internal)")
             .retrieve()
             .toEntity(byte[].class);
           if (response.getStatusCode().is2xxSuccessful()) {

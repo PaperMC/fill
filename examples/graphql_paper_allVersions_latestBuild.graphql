@@ -1,0 +1,54 @@
+# This GraphQL query retrieves information about the paper project, specifically focusing on its currently supported versions. For each supported version, it fetches:
+# - The version id
+# - The minimum required Java version and any recommended Java flags
+# - The most recent build (last: 1) including:
+#   - build id
+#   - The server:default download artifact, including:
+#     - file name
+#     - sha-256 checksum
+#     - file size (in bytes)
+#     - direct download url
+query {
+  project(key: "paper") {
+    id
+    key
+    versions(orderBy: {direction: DESC}, first: 100) {
+      edges {
+        node {
+          key
+          family {
+            key
+            java {
+              version {
+                minimum
+              }
+              flags {
+                recommended
+              }
+            }
+          }
+          java {
+            version {
+              minimum
+            }
+            flags {
+              recommended
+            }
+          }
+          builds(orderBy: {direction: DESC}, first: 1) {
+            edges {
+              node {
+                number
+                channel
+                download(key: "server:default") {
+                  name
+                  url
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

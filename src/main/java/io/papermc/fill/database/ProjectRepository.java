@@ -24,5 +24,5 @@ import org.springframework.stereotype.Repository;
 @NullMarked
 @Repository
 public interface ProjectRepository extends MongoRepository<ProjectEntity, ObjectId> {
-  Optional<ProjectEntity> findByName(final String name);
+  Optional<ProjectEntity> findByKey(final String key);
 }

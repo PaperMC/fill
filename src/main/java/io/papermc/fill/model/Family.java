@@ -15,13 +15,9 @@
  */
 package io.papermc.fill.model;
 
-import java.util.Comparator;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public interface Family extends Identified, Timestamped {
-  Comparator<Family> COMPARATOR_CREATED_AT = Comparator.comparing(Family::createdAt);
-  Comparator<Family> COMPARATOR_CREATED_AT_REVERSE = COMPARATOR_CREATED_AT.reversed();
-
+public interface Family extends Identified, Keyed, Timestamped {
   Java java();
 }

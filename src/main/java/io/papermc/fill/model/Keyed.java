@@ -13,15 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.graphql.input;
+package io.papermc.fill.model;
 
-import io.papermc.fill.model.SupportStatus;
+import java.util.Comparator;
+import java.util.List;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public record VersionFilters(
-  @Nullable String familyId,
-  @Nullable SupportStatus supportStatus
-) {
+public interface Keyed {
+  Comparator<? super Keyed> COMPARATOR_KEY = Comparator.comparing(Keyed::key);
+
+  static List<String> keysOf(final List<? extends Keyed> keys) {
+    return keys.stream().map(Keyed::key).toList();
+  }
+
+  String key();
 }

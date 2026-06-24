@@ -15,7 +15,7 @@
  */
 package io.papermc.fill.controller;
 
-import io.papermc.fill.exception.DiscontinuedException;
+import io.papermc.fill.exception.SunsetException;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +35,6 @@ public class Meta1Controller {
   })
   @SuppressWarnings("MVCPathVariableInspection")
   public ResponseEntity<?> gone() {
-    throw new DiscontinuedException();
+    throw new SunsetException();
   }
 }
