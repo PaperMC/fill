@@ -23,6 +23,7 @@ import org.jspecify.annotations.NullMarked;
 public record UploadRequest(
   UUID id,
   Download download,
+  String contentType,
   String contentMd5
 ) {
 }

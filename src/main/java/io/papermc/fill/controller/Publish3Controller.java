@@ -38,7 +38,6 @@ import io.papermc.fill.model.response.PublishResponse;
 import io.papermc.fill.model.response.v3.UploadResponse;
 import io.papermc.fill.notification.BuildListener;
 import io.papermc.fill.service.StorageService;
-import io.papermc.fill.util.http.MediaTypes;
 import io.papermc.fill.util.http.Responses;
 import java.time.Instant;
 import java.util.Date;
@@ -96,16 +95,16 @@ public class Publish3Controller {
   )
   @PreAuthorize("hasRole('API_PUBLISH')")
   public ResponseEntity<?> upload(@RequestBody final UploadRequest request) {
-    if (request.download().name().isBlank() || request.download().checksums().sha256().isBlank() || request.download().size() < 0 || request.contentMd5().isBlank()) {
+    if (request.download().name().isBlank() || request.download().checksums().sha256().isBlank() || request.download().size() < 0 || request.contentType().isBlank() || request.contentMd5().isBlank()) {
       final String message = "Invalid upload metadata";
       throw createPublishFailedException(request, message, new IllegalArgumentException(message));
     }
     try {
       return Responses.ok(new UploadResponse(
         true,
-        this.storage.createUploadUrl(request.id(), request.download(), request.contentMd5(), MediaTypes.APPLICATION_JAVA_ARCHIVE)
+        this.storage.createUploadUrl(request.id(), request.download(), request.contentMd5(), MediaType.parseMediaType(request.contentType()))
       ));
-    } catch (final StorageWriteException e) {
+    } catch (final StorageWriteException | IllegalArgumentException e) {
       throw createPublishFailedException(request, "Could not create upload URL", e);
     }
   }

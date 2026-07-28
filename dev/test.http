@@ -12,6 +12,7 @@ Authorization: Basic admin admin
         },
         "size": 6
     },
+    "contentType": "application/java-archive",
     "contentMd5": "CffgLxKQviEdpweiZvFTsw=="
 }
 
