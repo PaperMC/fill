@@ -1,22 +1,33 @@
-### upload a payload
-POST localhost:8080/upload
-Content-Type: multipart/form-data; boundary=Boundary
+### create a presigned upload URL
+POST localhost:8080/v3/upload
+Content-Type: application/json
 Authorization: Basic admin admin
 
---Boundary
-Content-Disposition: form-data; name="request"
-Content-Type: application/json
-
 {
-    "id": "6e9e34e8-b8ec-4c11-9b23-16dd951bb480"
+    "id": "6e9e34e8-b8ec-4c11-9b23-16dd951bb480",
+    "download": {
+        "name": "test.txt",
+        "checksums": {
+            "sha256": "66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18"
+        },
+        "size": 6
+    },
+    "contentMd5": "CffgLxKQviEdpweiZvFTsw=="
 }
---Boundary
-Content-Disposition: form-data; name="file"; filename="test.txt"
+
+> {% client.global.set("uploadUrl", response.body.url); %}
+
+### upload the payload
+PUT {{uploadUrl}}
+Content-Length: 6
+Content-MD5: CffgLxKQviEdpweiZvFTsw==
+Content-Type: application/java-archive
+x-amz-meta-sha256: 66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18
 
 < test.txt
 
 ### publish a build
-POST localhost:8080/publish
+POST localhost:8080/v3/publish
 Content-Type: application/json
 Authorization: Basic admin admin
 
@@ -39,7 +50,7 @@ Authorization: Basic admin admin
             "checksums": {
               "sha256": "66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18"
             },
-            "size": 1
+            "size": 6
         }
     }
 }

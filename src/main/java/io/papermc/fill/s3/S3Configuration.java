@@ -25,6 +25,7 @@ import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @NullMarked
 public interface S3Configuration {
@@ -61,5 +62,20 @@ public interface S3Configuration {
       }
     });
     return client.build();
+  }
+
+  static S3Presigner createPresigner(final S3Configuration properties) {
+    final S3Presigner.Builder presigner = S3Presigner.builder()
+      .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(properties.accessKeyId(), properties.secretAccessKey())))
+      .region(Region.of(properties.region()))
+      .serviceConfiguration(software.amazon.awssdk.services.s3.S3Configuration.builder()
+        .pathStyleAccessEnabled(properties.usePathStyleAccess())
+        .multiRegionEnabled(false)
+        .build());
+    final URI endpoint = properties.endpoint();
+    if (endpoint != null) {
+      presigner.endpointOverride(endpoint);
+    }
+    return presigner.build();
   }
 }
