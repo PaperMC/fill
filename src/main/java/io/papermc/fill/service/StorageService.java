@@ -85,28 +85,28 @@ public interface StorageService {
   ) throws StorageWriteException;
 
   URI createUploadUrl(
-    UUID id,
-    Download download,
-    String contentMd5,
-    MimeType type
+    final UUID id,
+    final Download download,
+    final String contentMd5,
+    final MimeType type
   ) throws StorageWriteException;
 
   void verifyStagedObject(
-    UUID id,
-    Download download
+    final UUID id,
+    final Download download
   ) throws StorageWriteException;
 
   void promoteStagedObject(
-    UUID id,
-    Project project,
-    Version version,
-    BuildWithDownloads<Download> build,
-    Download download
+    final UUID id,
+    final Project project,
+    final Version version,
+    final BuildWithDownloads<Download> build,
+    final Download download
   ) throws StorageWriteException;
 
   void deleteStagedObject(
-    UUID id,
-    String filename
+    final UUID id,
+    final String filename
   ) throws StorageWriteException;
 
   @Deprecated
