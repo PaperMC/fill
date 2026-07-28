@@ -59,6 +59,9 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 @NullMarked
 @Service
 public class StorageServiceImpl implements StorageService {
+  // The bucket must expire abandoned objects under this prefix with a lifecycle rule
+  // to prevent object leaks from failed publications.
+  private static final String STAGING_PREFIX = "staging/";
   private static final Duration UPLOAD_URL_DURATION = Duration.ofMinutes(15);
   private static final Logger LOGGER = LoggerFactory.getLogger(StorageServiceImpl.class);
   private final ApplicationApiProperties properties;
@@ -248,7 +251,7 @@ public class StorageServiceImpl implements StorageService {
   }
 
   private static String stagingPath(final UUID id, final String filename) {
-    return String.format("staging/%s/%s", id, filename);
+    return String.format("%s%s/%s", STAGING_PREFIX, id, filename);
   }
 
   @PreDestroy
