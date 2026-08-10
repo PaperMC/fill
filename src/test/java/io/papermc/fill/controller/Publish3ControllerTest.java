@@ -52,6 +52,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -134,7 +135,7 @@ public class Publish3ControllerTest {
     when(this.builds.findByVersionAndNumber(VERSION, request.build())).thenReturn(Optional.empty());
     when(this.builds.save(any(BuildEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-    final var response = this.controller.publish(request);
+    final ResponseEntity<?> response = this.controller.publish(request);
 
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     final InOrder order = inOrder(this.storage, this.builds, this.listener);
@@ -183,7 +184,7 @@ public class Publish3ControllerTest {
     );
     when(this.builds.findByVersionAndNumber(VERSION, request.build())).thenReturn(Optional.of(existing));
 
-    final var response = this.controller.publish(request);
+    final ResponseEntity<?> response = this.controller.publish(request);
 
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
     for (final Download download : request.downloads().values()) {

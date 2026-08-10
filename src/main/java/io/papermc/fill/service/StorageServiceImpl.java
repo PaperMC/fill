@@ -51,6 +51,7 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -145,7 +146,7 @@ public class StorageServiceImpl implements StorageService {
   public void verifyStagedObject(final UUID id, final Download download) throws StorageWriteException {
     final String path = stagingPath(id, download.name());
     try {
-      final var response = this.s3.headObject(HeadObjectRequest.builder()
+      final HeadObjectResponse response = this.s3.headObject(HeadObjectRequest.builder()
         .bucket(this.properties.storage().s3().bucket())
         .key(path)
         .build());

@@ -21,6 +21,8 @@ import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,8 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class S3ConfigurationTest {
   @Test
   void createsSigV4PresignedUploadUrl() {
-    try (final var presigner = S3Configuration.createPresigner(new TestConfiguration())) {
-      final var request = presigner.presignPutObject(PutObjectPresignRequest.builder()
+    try (final S3Presigner presigner = S3Configuration.createPresigner(new TestConfiguration())) {
+      final PresignedPutObjectRequest request = presigner.presignPutObject(PutObjectPresignRequest.builder()
         .signatureDuration(Duration.ofMinutes(5))
         .putObjectRequest(PutObjectRequest.builder()
           .bucket("fill")
