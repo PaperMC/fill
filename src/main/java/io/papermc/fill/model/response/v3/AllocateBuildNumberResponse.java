@@ -13,18 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.service;
+package io.papermc.fill.model.response.v3;
 
-import io.papermc.fill.database.VersionEntity;
-import java.util.OptionalInt;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public interface PublishingService {
-  int allocateBuildNumber(
-    final String session,
-    final VersionEntity version,
-    @Deprecated(forRemoval = true)
-    final OptionalInt requested
-  );
+public record AllocateBuildNumberResponse(
+  int number
+) {
 }

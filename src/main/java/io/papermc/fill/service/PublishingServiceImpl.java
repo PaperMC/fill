@@ -15,13 +15,12 @@
  */
 package io.papermc.fill.service;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.VersionEntity;
+import io.papermc.fill.database.VersionRepository;
+import io.papermc.fill.exception.SessionConflictException;
 import io.papermc.fill.model.Numbered;
-import java.util.List;
 import java.util.OptionalInt;
-import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,44 +32,45 @@ import org.springframework.stereotype.Service;
 public class PublishingServiceImpl implements PublishingService {
   private static final Logger LOGGER = LoggerFactory.getLogger(PublishingServiceImpl.class);
 
+  private final VersionRepository versions;
   private final BuildRepository builds;
 
   @Autowired
   public PublishingServiceImpl(
+    final VersionRepository versions,
     final BuildRepository builds
   ) {
+    this.versions = versions;
     this.builds = builds;
   }
 
   @Override
-  public int getNextBuildNumber(
+  public int allocateBuildNumber(
+    final String session,
     final VersionEntity version,
     @Deprecated(forRemoval = true)
     final OptionalInt requested
   ) {
+    if (version.isPastPublishingSession(session)) {
+      throw new SessionConflictException(String.format("Session %s expired.", session));
+    }
+
+    final int allocatedBuildNumber;
     if (requested.isPresent()) {
       LOGGER.warn("Manually requested build number {} for version {}", requested, version._id());
+      allocatedBuildNumber = requested.getAsInt();
+    } else if (version.nextBuildNumber() == 0) {
+      final OptionalInt maxBuildNumber = this.builds
+        .findAllByVersion(version)
+        .mapToInt(Numbered::number)
+        .max();
+      allocatedBuildNumber = maxBuildNumber.orElse(0) + 1;
+    } else {
+      allocatedBuildNumber = version.nextBuildNumber();
     }
-    return getNextBuildNumber(() -> this.builds.findAllByVersion(version).toList(), requested);
-  }
-
-  @VisibleForTesting
-  static int getNextBuildNumber(
-    final Supplier<List<? extends Numbered>> builds,
-    @Deprecated(forRemoval = true)
-    final OptionalInt requested
-  ) {
-    if (requested.isPresent()) {
-      return requested.getAsInt();
-    }
-    final OptionalInt maxBuildNumber = builds
-      .get()
-      .stream()
-      .mapToInt(Numbered::number)
-      .max();
-    if (maxBuildNumber.isPresent()) {
-      return maxBuildNumber.getAsInt() + 1;
-    }
-    return 1;
+    version.setPublishingSession(session);
+    version.setNextBuildNumber(allocatedBuildNumber + 1);
+    this.versions.save(version);
+    return allocatedBuildNumber;
   }
 }

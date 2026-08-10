@@ -20,6 +20,8 @@ import io.papermc.fill.model.Support;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.util.git.GitRepository;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -42,6 +44,9 @@ public class VersionEntity extends AbstractEntity implements Version {
   private @Nullable GitRepository gitRepository;
   private Support support;
   private @Nullable Java java;
+  private @Nullable Set<String> publishingSessions;
+  private @Nullable String publishingSession;
+  private int nextBuildNumber;
   @Deprecated
   private @Nullable ObjectId mostRecentPromotedBuild;
 
@@ -108,6 +113,28 @@ public class VersionEntity extends AbstractEntity implements Version {
 
   public void setJava(final @Nullable Java java) {
     this.java = java;
+  }
+
+  public boolean isPastPublishingSession(final String publishingSession) {
+    final boolean isCurrentPublishingSession = publishingSession.equals(this.publishingSession);
+    final boolean isPastPublishingSession = this.publishingSessions != null && this.publishingSessions.contains(publishingSession);
+    return !isCurrentPublishingSession && isPastPublishingSession;
+  }
+
+  public void setPublishingSession(final String publishingSession) {
+    this.publishingSession = publishingSession;
+    if (this.publishingSessions == null) {
+      this.publishingSessions = new HashSet<>();
+    }
+    this.publishingSessions.add(publishingSession);
+  }
+
+  public int nextBuildNumber() {
+    return this.nextBuildNumber;
+  }
+
+  public void setNextBuildNumber(final int nextBuildNumber) {
+    this.nextBuildNumber = nextBuildNumber;
   }
 
   @Deprecated
