@@ -13,21 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.model;
+package io.papermc.fill.model.request.v3;
 
+import io.papermc.fill.model.BuildChannel;
+import io.papermc.fill.model.Commit;
+import io.papermc.fill.model.Download;
+import java.time.Instant;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.Map;
+import java.util.UUID;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public interface Build extends Identified, Numbered, Timestamped {
-  BuildChannel channel();
-
-  static Predicate<Build> isChannel(final @Nullable BuildChannel channel) {
-    return build -> channel == null || build.channel() == channel;
-  }
-
-  // descending
-  List<Commit> commits();
+public record PublishRequest(
+  UUID id,
+  String project,
+  String family,
+  String version,
+  @Deprecated(forRemoval = true)
+  int build,
+  Instant time,
+  BuildChannel channel,
+  List<Commit> commits,
+  Map<String, Download> downloads
+) {
 }

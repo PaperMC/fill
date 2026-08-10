@@ -11,6 +11,12 @@
 # macOS
 .DS_Store
 
+# Node.js
+/node_modules/
+
+# VS Code
+/.vscode/
+
 # Application
 /run/
 /graphql.config.yaml

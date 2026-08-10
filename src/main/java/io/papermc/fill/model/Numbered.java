@@ -15,19 +15,13 @@
  */
 package io.papermc.fill.model;
 
-import java.util.List;
-import java.util.function.Predicate;
+import java.util.Comparator;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public interface Build extends Identified, Numbered, Timestamped {
-  BuildChannel channel();
+public interface Numbered {
+  Comparator<Numbered> NUMBER_ASC = Comparator.comparing(Numbered::number);
+  Comparator<Numbered> NUMBER_DESC = NUMBER_ASC.reversed();
 
-  static Predicate<Build> isChannel(final @Nullable BuildChannel channel) {
-    return build -> channel == null || build.channel() == channel;
-  }
-
-  // descending
-  List<Commit> commits();
+  int number();
 }

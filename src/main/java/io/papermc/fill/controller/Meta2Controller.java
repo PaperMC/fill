@@ -37,6 +37,7 @@ import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.Keyed;
+import io.papermc.fill.model.Numbered;
 import io.papermc.fill.model.Timestamped;
 import io.papermc.fill.model.response.v2.BuildResponse;
 import io.papermc.fill.model.response.v2.BuildsResponse;
@@ -195,7 +196,7 @@ public class Meta2Controller {
       .collect(Collectors.toMap(AbstractEntity::_id, Function.identity()));
     final List<BuildEntity> builds = this.builds.findAllByVersionIn(versionsById.keySet())
       .filter(build -> build.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
-      .sorted(Build.NUMBER_ASC)
+      .sorted(Numbered.NUMBER_ASC)
       .toList();
     final FamilyBuildsResponse response = new FamilyBuildsResponse(
       project.key(),
@@ -233,7 +234,7 @@ public class Meta2Controller {
     }
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .filter(build -> build.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
-      .sorted(Build.NUMBER_ASC)
+      .sorted(Numbered.NUMBER_ASC)
       .toList();
     final VersionResponse response = new VersionResponse(
       project.key(),
@@ -262,7 +263,7 @@ public class Meta2Controller {
     }
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
       .filter(build -> build.createdAt().isBefore(SharedConstants.API_V2_CUTOFF))
-      .sorted(Build.NUMBER_ASC)
+      .sorted(Numbered.NUMBER_ASC)
       .toList();
     final BuildsResponse response = new BuildsResponse(
       project.key(),

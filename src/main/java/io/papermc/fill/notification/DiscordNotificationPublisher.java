@@ -37,6 +37,7 @@ import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
+import io.papermc.fill.model.Numbered;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.service.DiscordService;
 import io.papermc.fill.service.StorageService;
@@ -168,7 +169,7 @@ public class DiscordNotificationPublisher implements BuildListener {
 
   private @Nullable Button createDiffButton(final VersionEntity version, final GitRepository repository, final BuildWithDownloads<Download> build) {
     final List<BuildEntity> builds = this.builds.findAllByVersion(version)
-      .sorted(Build.NUMBER_ASC)
+      .sorted(Numbered.NUMBER_ASC)
       .toList();
     final Build buildBefore = getBuildBefore(builds);
     if (buildBefore != null && !buildBefore.commits().isEmpty() && !build.commits().isEmpty()) {

@@ -38,11 +38,12 @@ import io.papermc.fill.model.Checksums;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.Support;
-import io.papermc.fill.model.request.PublishRequest;
 import io.papermc.fill.model.request.UploadRequest;
+import io.papermc.fill.model.request.v3.PublishRequest;
 import io.papermc.fill.model.response.PublishResponse;
 import io.papermc.fill.model.response.UploadResponse;
 import io.papermc.fill.notification.BuildListener;
+import io.papermc.fill.service.PublishingService;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.crypto.HashAlgorithm;
 import io.papermc.fill.util.http.MediaTypes;
@@ -55,6 +56,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import org.bson.types.ObjectId;
@@ -87,6 +89,7 @@ public class PublishController {
   private final FamilyRepository families;
   private final VersionRepository versions;
   private final BuildRepository builds;
+  private final PublishingService publishing;
   private final StorageService storage;
   private final Set<BuildListener> buildListeners;
   private final LoadingCache<UUID, StagingInstance> instances = Caffeine.newBuilder()
@@ -99,6 +102,7 @@ public class PublishController {
     final FamilyRepository families,
     final VersionRepository versions,
     final BuildRepository builds,
+    final PublishingService publishing,
     final StorageService storage,
     final Set<BuildListener> buildListeners
   ) {
@@ -106,6 +110,7 @@ public class PublishController {
     this.families = families;
     this.versions = versions;
     this.builds = builds;
+    this.publishing = publishing;
     this.storage = storage;
     this.buildListeners = buildListeners;
   }
@@ -177,7 +182,9 @@ public class PublishController {
       }
     }
 
-    if (this.builds.findByVersionAndNumber(version, request.build()).isPresent()) {
+    final int number = this.publishing.getNextBuildNumber(version, OptionalInt.of(request.build()));
+
+    if (this.builds.findByVersionAndNumber(version, number).isPresent()) {
       throw createPublishFailedException(request, "Build already exists", new DuplicateBuildException());
     }
 
@@ -190,7 +197,7 @@ public class PublishController {
       createdAt,
       project,
       version,
-      request.build(),
+      number,
       request.channel(),
       commits,
       downloads

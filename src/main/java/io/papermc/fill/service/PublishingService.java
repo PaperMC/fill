@@ -13,21 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.model;
+package io.papermc.fill.service;
 
-import java.util.List;
-import java.util.function.Predicate;
+import io.papermc.fill.database.VersionEntity;
+import java.util.OptionalInt;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public interface Build extends Identified, Numbered, Timestamped {
-  BuildChannel channel();
-
-  static Predicate<Build> isChannel(final @Nullable BuildChannel channel) {
-    return build -> channel == null || build.channel() == channel;
-  }
-
-  // descending
-  List<Commit> commits();
+public interface PublishingService {
+  int getNextBuildNumber(
+    final VersionEntity version,
+    @Deprecated(forRemoval = true)
+    final OptionalInt requested
+  );
 }
