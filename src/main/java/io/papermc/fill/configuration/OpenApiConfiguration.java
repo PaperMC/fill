@@ -46,9 +46,7 @@ public class OpenApiConfiguration {
     }
     api.setTags(List.of(
       new Tag()
-        .name("Meta v3"),
-      new Tag()
-        .name("Meta v2")
+        .name("Meta v3")
     ));
     return api;
   }

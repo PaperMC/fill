@@ -50,6 +50,7 @@ import io.papermc.fill.model.response.v2.ProjectsResponse;
 import io.papermc.fill.model.response.v2.VersionResponse;
 import io.papermc.fill.util.http.Caching;
 import io.papermc.fill.util.http.Responses;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Clock;
@@ -69,6 +70,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 @Deprecated
+@Hidden
 @NullMarked
 @RestController
 @Tag(name = "Meta v2")
