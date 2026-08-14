@@ -13,19 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.notification;
+package io.papermc.fill.graphql.payload;
 
-import io.papermc.fill.database.ProjectEntity;
-import io.papermc.fill.database.VersionEntity;
-import io.papermc.fill.model.BuildWithDownloads;
-import io.papermc.fill.model.Download;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public interface BuildListener {
-  void onBuildPublished(
-    final ProjectEntity project,
-    final VersionEntity version,
-    final BuildWithDownloads<Download> build
-  );
+public record DeleteWebhookPayload(
+  boolean ok
+) {
 }

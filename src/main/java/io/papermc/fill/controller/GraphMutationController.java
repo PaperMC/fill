@@ -23,6 +23,8 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
+import io.papermc.fill.database.WebhookEntity;
+import io.papermc.fill.event.FillEvent;
 import io.papermc.fill.exception.BuildNotFoundException;
 import io.papermc.fill.exception.DuplicateFamilyException;
 import io.papermc.fill.exception.DuplicateVersionException;
@@ -33,27 +35,33 @@ import io.papermc.fill.exception.VersionInUseException;
 import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.graphql.input.CreateFamilyInput;
 import io.papermc.fill.graphql.input.CreateVersionInput;
+import io.papermc.fill.graphql.input.CreateWebhookInput;
 import io.papermc.fill.graphql.input.DeleteFamilyInput;
 import io.papermc.fill.graphql.input.DeleteVersionInput;
+import io.papermc.fill.graphql.input.DeleteWebhookInput;
 import io.papermc.fill.graphql.input.PromoteBuildInput;
 import io.papermc.fill.graphql.input.UpdateFamilyInput;
 import io.papermc.fill.graphql.input.UpdateVersionInput;
 import io.papermc.fill.graphql.payload.CreateFamilyPayload;
 import io.papermc.fill.graphql.payload.CreateVersionPayload;
+import io.papermc.fill.graphql.payload.CreateWebhookPayload;
 import io.papermc.fill.graphql.payload.DeleteFamilyPayload;
 import io.papermc.fill.graphql.payload.DeleteVersionPayload;
+import io.papermc.fill.graphql.payload.DeleteWebhookPayload;
 import io.papermc.fill.graphql.payload.PromoteBuildPayload;
 import io.papermc.fill.graphql.payload.UpdateFamilyPayload;
 import io.papermc.fill.graphql.payload.UpdateVersionPayload;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Support;
+import io.papermc.fill.service.WebhookService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -67,6 +75,8 @@ public class GraphMutationController {
   private final FamilyRepository families;
   private final VersionRepository versions;
   private final BuildRepository builds;
+  private final WebhookService webhooks;
+  private final ApplicationEventPublisher events;
 
   @Autowired
   public GraphMutationController(
@@ -74,13 +84,17 @@ public class GraphMutationController {
     final ProjectRepository projects,
     final FamilyRepository families,
     final VersionRepository versions,
-    final BuildRepository builds
+    final BuildRepository builds,
+    final WebhookService webhooks,
+    final ApplicationEventPublisher events
   ) {
     this.clock = clock;
     this.projects = projects;
     this.families = families;
     this.versions = versions;
     this.builds = builds;
+    this.webhooks = webhooks;
+    this.events = events;
   }
 
   @MutationMapping("createFamily")
@@ -157,6 +171,7 @@ public class GraphMutationController {
       Support.SUPPORTED,
       input.java()
     ));
+    this.events.publishEvent(new FillEvent.VersionCreated(createdAt, project, entity));
     return new CreateVersionPayload(entity);
   }
 
@@ -174,6 +189,7 @@ public class GraphMutationController {
     }
     version.setJava(input.java());
     version = this.versions.save(version);
+    this.events.publishEvent(new FillEvent.VersionUpdated(this.clock.instant(), project, version));
     return new UpdateVersionPayload(version);
   }
 
@@ -208,6 +224,27 @@ public class GraphMutationController {
     version.setMostRecentPromotedBuild(build);
     version = this.versions.save(version);
 
+    this.events.publishEvent(new FillEvent.BuildPromoted(this.clock.instant(), project, version, build));
+
     return new PromoteBuildPayload(version, build);
+  }
+
+  @MutationMapping("createWebhook")
+  @PreAuthorize("hasRole('API_MANAGE')")
+  public CreateWebhookPayload createWebhook(
+    @Argument
+    final CreateWebhookInput input
+  ) {
+    final WebhookEntity webhook = this.webhooks.create(input.url());
+    return new CreateWebhookPayload(webhook, webhook.secret());
+  }
+
+  @MutationMapping("deleteWebhook")
+  @PreAuthorize("hasRole('API_MANAGE')")
+  public DeleteWebhookPayload deleteWebhook(
+    @Argument
+    final DeleteWebhookInput input
+  ) {
+    return new DeleteWebhookPayload(this.webhooks.delete(input.id()));
   }
 }

@@ -7,6 +7,8 @@ type Query {
   project(
     key: String!
   ): Project
+
+  webhooks: [Webhook]
 }
 
 type Mutation {
@@ -37,6 +39,14 @@ type Mutation {
   promoteBuild(
     input: PromoteBuildInput!
   ): PromoteBuildPayload
+
+  createWebhook(
+    input: CreateWebhookInput!
+  ): CreateWebhookPayload
+
+  deleteWebhook(
+    input: DeleteWebhookInput!
+  ): DeleteWebhookPayload
 }
 
 interface Node {
@@ -213,6 +223,18 @@ enum BuildChannel {
   RECOMMENDED
 }
 
+type Webhook {
+  id: ID!
+
+  url: String!
+
+  createdAt: DateTime!
+
+  lastDeliveryStatus: String
+
+  lastDeliveryAt: DateTime
+}
+
 type Checksums {
   sha256: String!
 }
@@ -327,6 +349,14 @@ input DeleteVersionInput {
   key: String!
 }
 
+input CreateWebhookInput {
+  url: String!
+}
+
+input DeleteWebhookInput {
+  id: ID!
+}
+
 type CreateVersionPayload {
   version: Version
 }
@@ -336,6 +366,16 @@ type UpdateVersionPayload {
 }
 
 type DeleteVersionPayload {
+  ok: Boolean!
+}
+
+type CreateWebhookPayload {
+  webhook: Webhook!
+
+  secret: String!
+}
+
+type DeleteWebhookPayload {
   ok: Boolean!
 }
 

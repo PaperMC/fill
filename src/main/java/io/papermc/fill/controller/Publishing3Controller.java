@@ -23,6 +23,7 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
+import io.papermc.fill.event.FillEvent;
 import io.papermc.fill.exception.DuplicateBuildException;
 import io.papermc.fill.exception.FamilyNotFoundException;
 import io.papermc.fill.exception.ProjectNotFoundException;
@@ -36,19 +37,18 @@ import io.papermc.fill.model.request.v3.PublishRequest;
 import io.papermc.fill.model.request.v3.StageRequest;
 import io.papermc.fill.model.response.v3.PublishResponse;
 import io.papermc.fill.model.response.v3.StageResponse;
-import io.papermc.fill.notification.BuildListener;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.http.Responses;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -69,7 +69,7 @@ public class Publishing3Controller {
   private final VersionRepository versions;
   private final BuildRepository builds;
   private final StorageService storage;
-  private final Set<BuildListener> buildListeners;
+  private final ApplicationEventPublisher events;
 
   @Autowired
   public Publishing3Controller(
@@ -78,14 +78,14 @@ public class Publishing3Controller {
     final VersionRepository versions,
     final BuildRepository builds,
     final StorageService storage,
-    final Set<BuildListener> buildListeners
+    final ApplicationEventPublisher events
   ) {
     this.projects = projects;
     this.families = families;
     this.versions = versions;
     this.builds = builds;
     this.storage = storage;
-    this.buildListeners = buildListeners;
+    this.events = events;
   }
 
   @CrossOrigin(methods = RequestMethod.POST)
@@ -139,6 +139,7 @@ public class Publishing3Controller {
           Support.SUPPORTED,
           null
         ));
+        this.events.publishEvent(new FillEvent.VersionCreated(createdAt, project, version));
       } else {
         throw new VersionNotFoundException();
       }
@@ -186,9 +187,7 @@ public class Publishing3Controller {
     this.builds.save(build);
     this.deleteStagedObjects(request, downloads);
 
-    for (final BuildListener listener : this.buildListeners) {
-      listener.onBuildPublished(project, version, build);
-    }
+    this.events.publishEvent(new FillEvent.BuildPublished(createdAt, project, version, build));
 
     return Responses.created(new PublishResponse(true));
   }
