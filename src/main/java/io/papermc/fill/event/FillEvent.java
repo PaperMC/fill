@@ -33,6 +33,7 @@ public sealed interface FillEvent permits FillEvent.BuildPublished, FillEvent.Bu
 
   VersionEntity version();
 
+  @NullMarked
   record BuildPublished(
     Instant time,
     ProjectEntity project,
@@ -45,6 +46,7 @@ public sealed interface FillEvent permits FillEvent.BuildPublished, FillEvent.Bu
     }
   }
 
+  @NullMarked
   record BuildPromoted(
     Instant time,
     ProjectEntity project,
@@ -57,6 +59,7 @@ public sealed interface FillEvent permits FillEvent.BuildPublished, FillEvent.Bu
     }
   }
 
+  @NullMarked
   record VersionCreated(
     Instant time,
     ProjectEntity project,
@@ -68,6 +71,7 @@ public sealed interface FillEvent permits FillEvent.BuildPublished, FillEvent.Bu
     }
   }
 
+  @NullMarked
   record VersionUpdated(
     Instant time,
     ProjectEntity project,

@@ -24,26 +24,34 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public record WebhookPayload(String type, Instant timestamp, Data data) {
 
+  @NullMarked
   public sealed interface Data permits Data.BuildPublished, Data.BuildPromoted, Data.VersionCreated, Data.VersionUpdated {
+    @NullMarked
     record BuildPublished(ProjectRef project, VersionRef version, BuildRef build) implements Data {
     }
 
+    @NullMarked
     record BuildPromoted(ProjectRef project, VersionRef version, BuildRef build) implements Data {
     }
 
+    @NullMarked
     record VersionCreated(ProjectRef project, VersionRef version) implements Data {
     }
 
+    @NullMarked
     record VersionUpdated(ProjectRef project, VersionRef version) implements Data {
     }
   }
 
+  @NullMarked
   public record ProjectRef(String id, String key) {
   }
 
+  @NullMarked
   public record VersionRef(String id, String key) {
   }
 
+  @NullMarked
   public record BuildRef(String id, int number, BuildChannel channel) {
   }
 

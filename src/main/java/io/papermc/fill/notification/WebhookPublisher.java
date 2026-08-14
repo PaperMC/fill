@@ -236,6 +236,7 @@ public class WebhookPublisher {
     }
   }
 
+  @NullMarked
   private static final class NonSuccessfulDelivery extends RuntimeException {
     private final HttpStatusCode status;
 
