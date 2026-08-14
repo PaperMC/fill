@@ -32,10 +32,10 @@ import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.Support;
-import io.papermc.fill.model.request.PublishRequest;
-import io.papermc.fill.model.request.v3.UploadRequest;
-import io.papermc.fill.model.response.PublishResponse;
-import io.papermc.fill.model.response.v3.UploadResponse;
+import io.papermc.fill.model.request.v3.PublishRequest;
+import io.papermc.fill.model.request.v3.StageRequest;
+import io.papermc.fill.model.response.v3.PublishResponse;
+import io.papermc.fill.model.response.v3.StageResponse;
 import io.papermc.fill.notification.BuildListener;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.http.Responses;
@@ -60,9 +60,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 @NullMarked
 @RestController
-public class Publish3Controller {
+public class Publishing3Controller {
   private static final boolean CREATE_MISSING_VERSIONS = true;
-  private static final Logger LOGGER = LoggerFactory.getLogger(Publish3Controller.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(Publishing3Controller.class);
 
   private final ProjectRepository projects;
   private final FamilyRepository families;
@@ -72,7 +72,7 @@ public class Publish3Controller {
   private final Set<BuildListener> buildListeners;
 
   @Autowired
-  public Publish3Controller(
+  public Publishing3Controller(
     final ProjectRepository projects,
     final FamilyRepository families,
     final VersionRepository versions,
@@ -91,16 +91,19 @@ public class Publish3Controller {
   @CrossOrigin(methods = RequestMethod.POST)
   @PostMapping(
     consumes = MediaType.APPLICATION_JSON_VALUE,
-    path = "/v3/upload"
+    path = "/v3/publishing/stage"
   )
   @PreAuthorize("hasRole('API_PUBLISH')")
-  public ResponseEntity<?> upload(@RequestBody final UploadRequest request) {
+  public ResponseEntity<?> stage(
+    @RequestBody
+    final StageRequest request
+  ) {
     if (request.download().name().isBlank() || request.download().checksums().sha256().isBlank() || request.download().size() < 0 || request.contentType().isBlank() || request.contentMd5().isBlank()) {
       final String message = "Invalid upload metadata";
       throw createPublishFailedException(request, message, new IllegalArgumentException(message));
     }
     try {
-      return Responses.ok(new UploadResponse(
+      return Responses.ok(new StageResponse(
         true,
         this.storage.createUploadUrl(request.id(), request.download(), request.contentMd5(), MediaType.parseMediaType(request.contentType()))
       ));
@@ -112,7 +115,7 @@ public class Publish3Controller {
   @CrossOrigin(methods = RequestMethod.POST)
   @PostMapping(
     consumes = MediaType.APPLICATION_JSON_VALUE,
-    path = "/v3/publish"
+    path = "/v3/publishing/publish"
   )
   @PreAuthorize("hasRole('API_PUBLISH')")
   public ResponseEntity<?> publish(
@@ -148,7 +151,7 @@ public class Publish3Controller {
     if (existingBuild != null) {
       if (isSameBuild(existingBuild, request, commits, downloads)) {
         this.deleteStagedObjects(request, downloads);
-        return Responses.created(new PublishResponse(true, existingBuild._id()));
+        return Responses.created(new PublishResponse(true));
       }
       throw createPublishFailedException(request, "Build already exists", new DuplicateBuildException());
     }
@@ -187,7 +190,7 @@ public class Publish3Controller {
       listener.onBuildPublished(project, version, build);
     }
 
-    return Responses.created(new PublishResponse(true, build._id()));
+    return Responses.created(new PublishResponse(true));
   }
 
   private static PublishFailedException createPublishFailedException(final Object request, final String message, final Throwable throwable) {

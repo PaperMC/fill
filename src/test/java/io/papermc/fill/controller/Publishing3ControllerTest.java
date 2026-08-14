@@ -33,7 +33,7 @@ import io.papermc.fill.model.Java;
 import io.papermc.fill.model.JavaFlags;
 import io.papermc.fill.model.JavaVersion;
 import io.papermc.fill.model.Support;
-import io.papermc.fill.model.request.PublishRequest;
+import io.papermc.fill.model.request.v3.PublishRequest;
 import io.papermc.fill.notification.BuildListener;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.discord.DiscordNotificationChannel;
@@ -68,7 +68,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @NullMarked
-public class Publish3ControllerTest {
+public class Publishing3ControllerTest {
   private static final Instant CREATED_AT = Instant.parse("2026-07-28T00:00:00Z");
   private static final UUID UPLOAD_ID = UUID.fromString("9d42dfd6-6b0f-4eb5-ac5f-45efcdfead7e");
   private static final ProjectEntity PROJECT = ProjectEntity.create(
@@ -104,7 +104,7 @@ public class Publish3ControllerTest {
   private BuildRepository builds;
   private StorageService storage;
   private BuildListener listener;
-  private Publish3Controller controller;
+  private Publishing3Controller controller;
 
   @BeforeEach
   void setup() {
@@ -114,7 +114,7 @@ public class Publish3ControllerTest {
     this.builds = mock(BuildRepository.class);
     this.storage = mock(StorageService.class);
     this.listener = mock(BuildListener.class);
-    this.controller = new Publish3Controller(
+    this.controller = new Publishing3Controller(
       this.projects,
       this.families,
       this.versions,

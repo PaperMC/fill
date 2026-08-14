@@ -18,6 +18,7 @@ package io.papermc.fill.model.request;
 import java.util.UUID;
 import org.jspecify.annotations.NullMarked;
 
+@Deprecated(forRemoval = true)
 @NullMarked
 public record UploadRequest(
   UUID id
