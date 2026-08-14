@@ -17,7 +17,6 @@ package io.papermc.fill.notification;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import io.papermc.fill.database.WebhookEntity;
 import io.papermc.fill.event.FillEvent;
@@ -27,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.Clock;
 import java.time.Duration;
-import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
@@ -94,10 +92,10 @@ public class WebhookPublisher {
   private final Semaphore concurrency = new Semaphore(MAX_CONCURRENT_DELIVERIES);
 
   @Autowired
-  public WebhookPublisher(final WebhookService webhooks, final Clock clock) {
+  public WebhookPublisher(final WebhookService webhooks, final Clock clock, final ObjectMapper json) {
     this.webhooks = webhooks;
     this.clock = clock;
-    this.json = new ObjectMapper();
+    this.json = json;
     final SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
     requestFactory.setConnectTimeout(CONNECT_TIMEOUT);
     requestFactory.setReadTimeout(READ_TIMEOUT);
@@ -204,26 +202,8 @@ public class WebhookPublisher {
   }
 
   private byte[] createPayload(final FillEvent event) {
-    final ObjectNode root = this.json.createObjectNode();
-    root.put("type", event.type());
-    root.put("timestamp", DateTimeFormatter.ISO_INSTANT.format(event.time()));
-    final ObjectNode data = root.putObject("data");
-    data.put("project", event.project().key());
-    data.put("version", event.version().key());
-    switch (event) {
-      case FillEvent.BuildPublished published -> {
-        data.put("build", published.build().number());
-        data.put("channel", published.build().channel().name());
-      }
-      case FillEvent.BuildPromoted promoted -> {
-        data.put("build", promoted.build().number());
-        data.put("channel", promoted.build().channel().name());
-      }
-      case FillEvent.VersionCreated _, FillEvent.VersionUpdated _ -> {
-      }
-    }
     try {
-      return this.json.writeValueAsBytes(root);
+      return this.json.writeValueAsBytes(WebhookPayload.from(event));
     } catch (final JsonProcessingException exception) {
       throw new IllegalStateException("Could not serialize webhook payload", exception);
     }
