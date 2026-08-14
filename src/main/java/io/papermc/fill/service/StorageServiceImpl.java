@@ -24,9 +24,13 @@ import io.papermc.fill.model.Project;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.s3.S3Configuration;
 import io.papermc.fill.util.http.Headers;
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -42,17 +46,28 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 @NullMarked
 @Service
 public class StorageServiceImpl implements StorageService {
+  // The bucket must expire abandoned objects under this prefix with a lifecycle rule
+  // to prevent object leaks from failed publications.
+  private static final String STAGING_PREFIX = "staging/";
+  private static final Duration UPLOAD_URL_DURATION = Duration.ofMinutes(15);
   private static final Logger LOGGER = LoggerFactory.getLogger(StorageServiceImpl.class);
   private final ApplicationApiProperties properties;
   private final S3Client s3;
+  private final S3Presigner presigner;
   private final RestClient http;
 
   @Autowired
@@ -61,6 +76,7 @@ public class StorageServiceImpl implements StorageService {
   ) {
     this.properties = properties;
     this.s3 = S3Configuration.createClient(properties.storage().s3());
+    this.presigner = S3Configuration.createPresigner(properties.storage().s3());
     this.http = RestClient.builder()
       .defaultHeader(HttpHeaders.USER_AGENT, "Fill (Internal)")
       .build();
@@ -87,15 +103,98 @@ public class StorageServiceImpl implements StorageService {
   ) throws StorageWriteException {
     final ApplicationApiProperties.Storage properties = this.properties.storage();
     final String path = StorageService.createPath(properties.path(), project, version, build, download);
-    final PutObjectRequest.Builder request = PutObjectRequest.builder()
+    final PutObjectRequest request = PutObjectRequest.builder()
       .bucket(properties.s3().bucket())
       .key(path)
       .contentLength((long) content.length)
-      .contentType(type.toString());
+      .contentType(type.toString())
+      .build();
     try {
-      this.s3.putObject(request.build(), RequestBody.fromBytes(content));
+      this.s3.putObject(request, RequestBody.fromBytes(content));
     } catch (final SdkException e) {
       throw createStorageWriteException(download, path, "s3 exception", e);
+    }
+  }
+
+  @Override
+  public URI createUploadUrl(
+    final UUID id,
+    final Download download,
+    final String contentMd5,
+    final MimeType type
+  ) throws StorageWriteException {
+    final String path = stagingPath(id, download.name());
+    final PutObjectRequest request = PutObjectRequest.builder()
+      .bucket(this.properties.storage().s3().bucket())
+      .key(path)
+      .contentLength((long) download.size())
+      .contentType(type.toString())
+      .contentMD5(contentMd5)
+      .metadata(Map.of("sha256", download.checksums().sha256()))
+      .build();
+    try {
+      return URI.create(this.presigner.presignPutObject(PutObjectPresignRequest.builder()
+        .signatureDuration(UPLOAD_URL_DURATION)
+        .putObjectRequest(request)
+        .build()).url().toString());
+    } catch (final SdkException e) {
+      throw createStorageWriteException(download, path, "s3 exception", e);
+    }
+  }
+
+  @Override
+  public void verifyStagedObject(final UUID id, final Download download) throws StorageWriteException {
+    final String path = stagingPath(id, download.name());
+    try {
+      final HeadObjectResponse response = this.s3.headObject(HeadObjectRequest.builder()
+        .bucket(this.properties.storage().s3().bucket())
+        .key(path)
+        .build());
+      if (response.contentLength() != download.size()) {
+        throw createStorageWriteException(download, path, String.format("expected size %d but got %d", download.size(), response.contentLength()), new IllegalArgumentException());
+      }
+      final String actualSha256 = response.metadata().get("sha256");
+      if (!download.checksums().sha256().equals(actualSha256)) {
+        throw createStorageWriteException(download, path, String.format("expected SHA-256 %s but got %s", download.checksums().sha256(), actualSha256), new IllegalArgumentException());
+      }
+    } catch (final SdkException e) {
+      throw createStorageWriteException(download, path, "s3 exception", e);
+    }
+  }
+
+  @Override
+  public void promoteStagedObject(
+    final UUID id,
+    final Project project,
+    final Version version,
+    final BuildWithDownloads<Download> build,
+    final Download download
+  ) throws StorageWriteException {
+    final ApplicationApiProperties.Storage properties = this.properties.storage();
+    final String source = stagingPath(id, download.name());
+    final String destination = StorageService.createPath(properties.path(), project, version, build, download);
+    try {
+      this.s3.copyObject(CopyObjectRequest.builder()
+        .sourceBucket(properties.s3().bucket())
+        .sourceKey(source)
+        .destinationBucket(properties.s3().bucket())
+        .destinationKey(destination)
+        .build());
+    } catch (final SdkException e) {
+      throw createStorageWriteException(download, destination, "s3 exception", e);
+    }
+  }
+
+  @Override
+  public void deleteStagedObject(final UUID id, final String filename) throws StorageWriteException {
+    final String path = stagingPath(id, filename);
+    try {
+      this.s3.deleteObject(DeleteObjectRequest.builder()
+        .bucket(this.properties.storage().s3().bucket())
+        .key(path)
+        .build());
+    } catch (final SdkException e) {
+      throw createStorageWriteException(filename, path, "s3 exception", e);
     }
   }
 
@@ -152,14 +251,24 @@ public class StorageServiceImpl implements StorageService {
     };
   }
 
+  private static String stagingPath(final UUID id, final String filename) {
+    return String.format("%s%s/%s", STAGING_PREFIX, id, filename);
+  }
+
+  @PreDestroy
+  public void close() {
+    this.presigner.close();
+    this.s3.close();
+  }
+
   private static StorageReadException createStorageReadException(final Download download, final Object path, final String reason, final Throwable throwable) {
     final String message = String.format("Failed to read object [%s] from storage [%s]: %s", download, path, reason);
     LOGGER.error(message, throwable);
     return new StorageReadException(message, throwable);
   }
 
-  private static StorageWriteException createStorageWriteException(final Download download, final Object path, final String reason, final Throwable throwable) {
-    final String message = String.format("Failed to write object [%s] to storage [%s]: %s", download, path, reason);
+  private static StorageWriteException createStorageWriteException(final Object object, final Object path, final String reason, final Throwable throwable) {
+    final String message = String.format("Failed to write object [%s] to storage [%s]: %s", object, path, reason);
     LOGGER.error(message, throwable);
     return new StorageWriteException(message, throwable);
   }

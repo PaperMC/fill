@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.model.response;
+package io.papermc.fill.model.response.v3;
 
 import org.jspecify.annotations.NullMarked;
 
-@Deprecated(forRemoval = true)
 @NullMarked
-public record UploadResponse(
+public record PublishResponse(
   boolean ok
 ) {
 }

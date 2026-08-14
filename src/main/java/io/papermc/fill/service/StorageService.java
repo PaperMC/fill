@@ -24,6 +24,7 @@ import io.papermc.fill.model.Project;
 import io.papermc.fill.model.Version;
 import java.net.URI;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.commons.text.StringSubstitutor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -81,6 +82,31 @@ public interface StorageService {
     final Download download,
     final byte[] content,
     final MimeType type
+  ) throws StorageWriteException;
+
+  URI createUploadUrl(
+    final UUID id,
+    final Download download,
+    final String contentMd5,
+    final MimeType type
+  ) throws StorageWriteException;
+
+  void verifyStagedObject(
+    final UUID id,
+    final Download download
+  ) throws StorageWriteException;
+
+  void promoteStagedObject(
+    final UUID id,
+    final Project project,
+    final Version version,
+    final BuildWithDownloads<Download> build,
+    final Download download
+  ) throws StorageWriteException;
+
+  void deleteStagedObject(
+    final UUID id,
+    final String filename
   ) throws StorageWriteException;
 
   @Deprecated

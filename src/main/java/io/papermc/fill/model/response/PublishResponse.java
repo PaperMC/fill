@@ -18,6 +18,7 @@ package io.papermc.fill.model.response;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 
+@Deprecated(forRemoval = true)
 @NullMarked
 public record PublishResponse(
   boolean ok,
