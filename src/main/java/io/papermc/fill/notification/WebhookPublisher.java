@@ -46,10 +46,10 @@ import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -170,8 +170,12 @@ public class WebhookPublisher {
           .header("webhook-timestamp", timestamp)
           .header("webhook-signature", signature)
           .body(body)
-          .retrieve()
-          .toBodilessEntity();
+          .exchange((request, response) -> {
+            if (!response.getStatusCode().is2xxSuccessful()) {
+              throw new NonSuccessfulDelivery(response.getStatusCode());
+            }
+            return null;
+          });
         return null;
       });
       this.webhooks.recordDelivery(webhook, DeliveryStatus.DELIVERED);
@@ -195,9 +199,11 @@ public class WebhookPublisher {
   }
 
   private static boolean isRetryable(final Throwable failure) {
-    if (failure instanceof final HttpClientErrorException exception) {
-      return exception.getStatusCode() == HttpStatus.REQUEST_TIMEOUT
-        || exception.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS;
+    if (failure instanceof final NonSuccessfulDelivery exception) {
+      final HttpStatusCode status = exception.status();
+      return status.is5xxServerError()
+        || status.isSameCodeAs(HttpStatus.REQUEST_TIMEOUT)
+        || status.isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS);
     }
     return true;
   }
@@ -227,6 +233,19 @@ public class WebhookPublisher {
       return "v1," + Base64.getEncoder().encodeToString(mac.doFinal());
     } catch (final GeneralSecurityException exception) {
       throw new IllegalStateException("Could not create webhook signature", exception);
+    }
+  }
+
+  private static final class NonSuccessfulDelivery extends RuntimeException {
+    private final HttpStatusCode status;
+
+    private NonSuccessfulDelivery(final HttpStatusCode status) {
+      super("Webhook target responded with status " + status.value());
+      this.status = status;
+    }
+
+    private HttpStatusCode status() {
+      return this.status;
     }
   }
 
