@@ -77,6 +77,9 @@ public class WebhookService {
       .toList();
   }
 
+  // Note: auto-pausing a webhook after N consecutive failed deliveries would be a useful
+  // follow-up. Deferred for now - failures are logged and observable, so repeated failures
+  // can be noticed and the webhook deleted manually.
   public void recordDelivery(final WebhookEntity webhook, final String status) {
     try {
       // Best-effort: a 0-match update (webhook deleted mid-flight) is acceptable and ignored.
