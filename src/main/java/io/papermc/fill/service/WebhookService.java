@@ -79,6 +79,7 @@ public class WebhookService {
 
   public void recordDelivery(final WebhookEntity webhook, final String status) {
     try {
+      // Best-effort: a 0-match update (webhook deleted mid-flight) is acceptable and ignored.
       this.webhooks.updateDelivery(webhook._id(), status, this.clock.instant());
     } catch (final Exception exception) {
       LOGGER.warn("Failed to record delivery status for webhook {}", webhook.id(), exception);

@@ -24,6 +24,7 @@ import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
 import io.papermc.fill.database.WebhookEntity;
+import io.papermc.fill.event.AsyncEventPublisher;
 import io.papermc.fill.event.FillEvent;
 import io.papermc.fill.exception.BuildNotFoundException;
 import io.papermc.fill.exception.DuplicateFamilyException;
@@ -61,7 +62,6 @@ import java.util.Date;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -76,7 +76,7 @@ public class GraphMutationController {
   private final VersionRepository versions;
   private final BuildRepository builds;
   private final WebhookService webhooks;
-  private final ApplicationEventPublisher events;
+  private final AsyncEventPublisher events;
 
   @Autowired
   public GraphMutationController(
@@ -86,7 +86,7 @@ public class GraphMutationController {
     final VersionRepository versions,
     final BuildRepository builds,
     final WebhookService webhooks,
-    final ApplicationEventPublisher events
+    final AsyncEventPublisher events
   ) {
     this.clock = clock;
     this.projects = projects;
@@ -171,7 +171,7 @@ public class GraphMutationController {
       Support.SUPPORTED,
       input.java()
     ));
-    this.events.publishEvent(new FillEvent.VersionCreated(createdAt, project, entity));
+    this.events.publish(new FillEvent.VersionCreated(createdAt, project, entity));
     return new CreateVersionPayload(entity);
   }
 
@@ -189,7 +189,7 @@ public class GraphMutationController {
     }
     version.setJava(input.java());
     version = this.versions.save(version);
-    this.events.publishEvent(new FillEvent.VersionUpdated(this.clock.instant(), project, version));
+    this.events.publish(new FillEvent.VersionUpdated(this.clock.instant(), project, version));
     return new UpdateVersionPayload(version);
   }
 
@@ -224,7 +224,7 @@ public class GraphMutationController {
     version.setMostRecentPromotedBuild(build);
     version = this.versions.save(version);
 
-    this.events.publishEvent(new FillEvent.BuildPromoted(this.clock.instant(), project, version, build));
+    this.events.publish(new FillEvent.BuildPromoted(this.clock.instant(), project, version, build));
 
     return new PromoteBuildPayload(version, build);
   }

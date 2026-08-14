@@ -122,8 +122,17 @@ public class WebhookPublisher {
   private void deliver(final WebhookEntity webhook, final FillEvent event) {
     final String deliveryId = "fill_" + UUID.randomUUID();
     final String timestamp = Long.toString(Instant.now().getEpochSecond());
-    final byte[] body = this.createPayload(event);
-    final String signature = createSignature(webhook.secret(), deliveryId, timestamp, body);
+
+    final byte[] body;
+    final String signature;
+    try {
+      body = this.createPayload(event);
+      signature = createSignature(webhook.secret(), deliveryId, timestamp, body);
+    } catch (final Exception exception) {
+      LOGGER.error("Failed to prepare webhook delivery {} to {}", deliveryId, webhook.url(), exception);
+      this.webhooks.recordDelivery(webhook, "failed");
+      return;
+    }
 
     Exception lastFailure = null;
     for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {

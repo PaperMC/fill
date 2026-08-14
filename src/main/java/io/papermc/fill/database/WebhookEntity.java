@@ -25,6 +25,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @NullMarked
 public class WebhookEntity extends AbstractEntity {
   private String url;
+  // Stored in plaintext so deliveries can be signed; anyone with DB access can forge signatures.
   private String secret;
   private @Nullable String lastDeliveryStatus;
   private @Nullable Instant lastDeliveryAt;

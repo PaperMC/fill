@@ -23,6 +23,7 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
+import io.papermc.fill.event.AsyncEventPublisher;
 import io.papermc.fill.event.FillEvent;
 import io.papermc.fill.exception.DuplicateBuildException;
 import io.papermc.fill.exception.FamilyNotFoundException;
@@ -48,7 +49,6 @@ import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -69,7 +69,7 @@ public class Publishing3Controller {
   private final VersionRepository versions;
   private final BuildRepository builds;
   private final StorageService storage;
-  private final ApplicationEventPublisher events;
+  private final AsyncEventPublisher events;
 
   @Autowired
   public Publishing3Controller(
@@ -78,7 +78,7 @@ public class Publishing3Controller {
     final VersionRepository versions,
     final BuildRepository builds,
     final StorageService storage,
-    final ApplicationEventPublisher events
+    final AsyncEventPublisher events
   ) {
     this.projects = projects;
     this.families = families;
@@ -139,7 +139,7 @@ public class Publishing3Controller {
           Support.SUPPORTED,
           null
         ));
-        this.events.publishEvent(new FillEvent.VersionCreated(createdAt, project, version));
+        this.events.publish(new FillEvent.VersionCreated(createdAt, project, version));
       } else {
         throw new VersionNotFoundException();
       }
@@ -187,7 +187,7 @@ public class Publishing3Controller {
     this.builds.save(build);
     this.deleteStagedObjects(request, downloads);
 
-    this.events.publishEvent(new FillEvent.BuildPublished(createdAt, project, version, build));
+    this.events.publish(new FillEvent.BuildPublished(createdAt, project, version, build));
 
     return Responses.created(new PublishResponse(true));
   }

@@ -25,6 +25,7 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
+import io.papermc.fill.event.AsyncEventPublisher;
 import io.papermc.fill.event.FillEvent;
 import io.papermc.fill.exception.ChecksumMismatchException;
 import io.papermc.fill.exception.DownloadNotFoundException;
@@ -64,7 +65,6 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -92,7 +92,7 @@ public class PublishController {
   private final BuildRepository builds;
   private final PublishingService publishing;
   private final StorageService storage;
-  private final ApplicationEventPublisher events;
+  private final AsyncEventPublisher events;
   private final LoadingCache<UUID, StagingInstance> instances = Caffeine.newBuilder()
     .expireAfterAccess(Duration.ofMinutes(5))
     .build(_ -> new StagingInstance());
@@ -105,7 +105,7 @@ public class PublishController {
     final BuildRepository builds,
     final PublishingService publishing,
     final StorageService storage,
-    final ApplicationEventPublisher events
+    final AsyncEventPublisher events
   ) {
     this.projects = projects;
     this.families = families;
@@ -233,7 +233,7 @@ public class PublishController {
 
     this.builds.save(build);
 
-    this.events.publishEvent(new FillEvent.BuildPublished(createdAt, project, version, build));
+    this.events.publish(new FillEvent.BuildPublished(createdAt, project, version, build));
 
     return Responses.created(new PublishResponse(true, build._id()));
   }

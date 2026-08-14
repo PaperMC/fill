@@ -23,6 +23,7 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
+import io.papermc.fill.event.AsyncEventPublisher;
 import io.papermc.fill.event.FillEvent;
 import io.papermc.fill.exception.PublishFailedException;
 import io.papermc.fill.exception.StorageWriteException;
@@ -50,7 +51,6 @@ import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -103,7 +103,7 @@ public class Publishing3ControllerTest {
   private VersionRepository versions;
   private BuildRepository builds;
   private StorageService storage;
-  private ApplicationEventPublisher events;
+  private AsyncEventPublisher events;
   private Publishing3Controller controller;
 
   @BeforeEach
@@ -113,7 +113,7 @@ public class Publishing3ControllerTest {
     this.versions = mock(VersionRepository.class);
     this.builds = mock(BuildRepository.class);
     this.storage = mock(StorageService.class);
-    this.events = mock(ApplicationEventPublisher.class);
+    this.events = mock(AsyncEventPublisher.class);
     this.controller = new Publishing3Controller(
       this.projects,
       this.families,
@@ -149,7 +149,7 @@ public class Publishing3ControllerTest {
     for (final Download download : downloads) {
       order.verify(this.storage).deleteStagedObject(UPLOAD_ID, download.name());
     }
-    order.verify(this.events).publishEvent(any(FillEvent.BuildPublished.class));
+    order.verify(this.events).publish(any(FillEvent.BuildPublished.class));
   }
 
   @Test
@@ -164,9 +164,9 @@ public class Publishing3ControllerTest {
 
     final InOrder order = inOrder(this.versions, this.builds, this.events);
     order.verify(this.versions).save(any(VersionEntity.class));
-    order.verify(this.events).publishEvent(any(FillEvent.VersionCreated.class));
+    order.verify(this.events).publish(any(FillEvent.VersionCreated.class));
     order.verify(this.builds).save(any(BuildEntity.class));
-    order.verify(this.events).publishEvent(any(FillEvent.BuildPublished.class));
+    order.verify(this.events).publish(any(FillEvent.BuildPublished.class));
   }
 
   @Test
