@@ -18,6 +18,7 @@ package io.papermc.fill.service;
 import io.papermc.fill.database.WebhookEntity;
 import io.papermc.fill.database.WebhookRepository;
 import io.papermc.fill.exception.WebhookNotFoundException;
+import io.papermc.fill.model.DeliveryStatus;
 import io.papermc.fill.model.Timestamped;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -80,7 +81,7 @@ public class WebhookService {
   // Note: auto-pausing a webhook after N consecutive failed deliveries would be a useful
   // follow-up. Deferred for now - failures are logged and observable, so repeated failures
   // can be noticed and the webhook deleted manually.
-  public void recordDelivery(final WebhookEntity webhook, final String status) {
+  public void recordDelivery(final WebhookEntity webhook, final DeliveryStatus status) {
     try {
       // Best-effort: a 0-match update (webhook deleted mid-flight) is acceptable and ignored.
       this.webhooks.updateDelivery(webhook._id(), status, this.clock.instant());

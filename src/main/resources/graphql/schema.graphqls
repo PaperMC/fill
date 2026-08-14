@@ -223,6 +223,12 @@ enum BuildChannel {
   RECOMMENDED
 }
 
+enum DeliveryStatus {
+  DELIVERED
+
+  FAILED
+}
+
 type Webhook {
   id: ID!
 
@@ -230,7 +236,7 @@ type Webhook {
 
   createdAt: DateTime!
 
-  lastDeliveryStatus: String
+  lastDeliveryStatus: DeliveryStatus
 
   lastDeliveryAt: DateTime
 }

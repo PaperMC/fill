@@ -17,6 +17,7 @@ package io.papermc.fill.service;
 
 import io.papermc.fill.database.WebhookEntity;
 import io.papermc.fill.database.WebhookRepository;
+import io.papermc.fill.model.DeliveryStatus;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -58,8 +59,8 @@ class WebhookServiceTest {
       "whsec_AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
     );
 
-    service.recordDelivery(webhook, "delivered");
+    service.recordDelivery(webhook, DeliveryStatus.DELIVERED);
 
-    verify(repository).updateDelivery(webhook._id(), "delivered", NOW);
+    verify(repository).updateDelivery(webhook._id(), DeliveryStatus.DELIVERED, NOW);
   }
 }

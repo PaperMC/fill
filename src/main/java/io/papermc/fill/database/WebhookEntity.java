@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.database;
 
+import io.papermc.fill.model.DeliveryStatus;
 import java.time.Instant;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
@@ -27,7 +28,7 @@ public class WebhookEntity extends AbstractEntity {
   private String url;
   // Stored in plaintext so deliveries can be signed; anyone with DB access can forge signatures.
   private String secret;
-  private @Nullable String lastDeliveryStatus;
+  private @Nullable DeliveryStatus lastDeliveryStatus;
   private @Nullable Instant lastDeliveryAt;
 
   public WebhookEntity() {
@@ -54,7 +55,7 @@ public class WebhookEntity extends AbstractEntity {
     return this.secret;
   }
 
-  public @Nullable String lastDeliveryStatus() {
+  public @Nullable DeliveryStatus lastDeliveryStatus() {
     return this.lastDeliveryStatus;
   }
 

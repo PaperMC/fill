@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import io.papermc.fill.database.WebhookEntity;
 import io.papermc.fill.event.FillEvent;
+import io.papermc.fill.model.DeliveryStatus;
 import io.papermc.fill.service.WebhookService;
 import jakarta.annotation.PreDestroy;
 import java.nio.charset.StandardCharsets;
@@ -156,7 +157,7 @@ public class WebhookPublisher {
       signature = createSignature(webhook.secret(), deliveryId, timestamp, body);
     } catch (final Exception exception) {
       LOGGER.error("Failed to prepare webhook delivery {} to {}", deliveryId, webhook.url(), exception);
-      this.webhooks.recordDelivery(webhook, "failed");
+      this.webhooks.recordDelivery(webhook, DeliveryStatus.FAILED);
       return;
     }
 
@@ -173,7 +174,7 @@ public class WebhookPublisher {
           .toBodilessEntity();
         return null;
       });
-      this.webhooks.recordDelivery(webhook, "delivered");
+      this.webhooks.recordDelivery(webhook, DeliveryStatus.DELIVERED);
     } catch (final RetryException exception) {
       if (Thread.currentThread().isInterrupted()) {
         // Shutdown interrupted the delivery; leave its previous status unchanged.
@@ -189,7 +190,7 @@ public class WebhookPublisher {
         exception.getExceptions().size(),
         exception
       );
-      this.webhooks.recordDelivery(webhook, "failed");
+      this.webhooks.recordDelivery(webhook, DeliveryStatus.FAILED);
     }
   }
 

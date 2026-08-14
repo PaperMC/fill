@@ -38,6 +38,7 @@ import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.BuildWithDownloadsImpl;
 import io.papermc.fill.model.Commit;
+import io.papermc.fill.model.DeliveryStatus;
 import io.papermc.fill.model.DownloadWithUrl;
 import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Keyed;
@@ -356,7 +357,7 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Webhook", field = "lastDeliveryStatus")
-  public @Nullable String mapWebhookLastDeliveryStatus(final WebhookEntity webhook) {
+  public @Nullable DeliveryStatus mapWebhookLastDeliveryStatus(final WebhookEntity webhook) {
     return webhook.lastDeliveryStatus();
   }
 

@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.database;
 
+import io.papermc.fill.model.DeliveryStatus;
 import java.time.Instant;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
@@ -28,5 +29,5 @@ import org.springframework.stereotype.Repository;
 public interface WebhookRepository extends MongoRepository<WebhookEntity, ObjectId> {
   @Query("{ '_id': ?0 }")
   @Update("{ '$set': { 'lastDeliveryStatus': ?1, 'lastDeliveryAt': ?2 } }")
-  long updateDelivery(ObjectId id, String status, Instant deliveredAt);
+  long updateDelivery(ObjectId id, DeliveryStatus status, Instant deliveredAt);
 }
