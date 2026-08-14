@@ -25,18 +25,16 @@ import io.papermc.fill.service.WebhookService;
 import jakarta.annotation.PreDestroy;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Semaphore;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.jspecify.annotations.NullMarked;
@@ -44,10 +42,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -59,7 +62,7 @@ import org.springframework.web.client.RestClient;
  * using the webhook's own secret, and retried with exponential backoff.</p>
  *
  * <p>Events are notifications, not data: consumers are expected to refetch the affected
- * resources from the API after verifying a delivery.</p>
+ * resources from the API after verifying a delivery. Events may be delivered out of order.</p>
  */
 @Component
 @NullMarked
@@ -72,20 +75,28 @@ public class WebhookPublisher {
   private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
 
   private final WebhookService webhooks;
+  private final Clock clock;
   private final ObjectMapper json;
   private final RestClient http;
-  private final ExecutorService executor = new ThreadPoolExecutor(
-    MAX_CONCURRENT_DELIVERIES,
-    MAX_CONCURRENT_DELIVERIES,
-    0L,
-    TimeUnit.MILLISECONDS,
-    new ArrayBlockingQueue<>(MAX_QUEUED_DELIVERIES),
+  private final RetryTemplate retry = new RetryTemplate(RetryPolicy.builder()
+    .maxRetries(MAX_ATTEMPTS - 1)
+    .delay(Duration.ofSeconds(1))
+    .jitter(Duration.ofMillis(250))
+    .multiplier(2)
+    .maxDelay(Duration.ofSeconds(8))
+    .excludes(Error.class)
+    .predicate(WebhookPublisher::isRetryable)
+    .build());
+  private final ExecutorService executor = Executors.newThreadPerTaskExecutor(
     Thread.ofVirtual().name("webhook-delivery-", 0).factory()
   );
+  private final Semaphore admission = new Semaphore(MAX_CONCURRENT_DELIVERIES + MAX_QUEUED_DELIVERIES);
+  private final Semaphore concurrency = new Semaphore(MAX_CONCURRENT_DELIVERIES);
 
   @Autowired
-  public WebhookPublisher(final WebhookService webhooks) {
+  public WebhookPublisher(final WebhookService webhooks, final Clock clock) {
     this.webhooks = webhooks;
+    this.clock = clock;
     this.json = new ObjectMapper();
     final SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
     requestFactory.setConnectTimeout(CONNECT_TIMEOUT);
@@ -106,10 +117,27 @@ public class WebhookPublisher {
       return;
     }
     for (final WebhookEntity webhook : targets) {
-      try {
-        this.executor.submit(() -> this.deliver(webhook, event));
-      } catch (final RejectedExecutionException exception) {
+      if (!this.admission.tryAcquire()) {
         LOGGER.warn("Webhook delivery queue is full; dropping {} event for {}", event.type(), webhook.url());
+        continue;
+      }
+      try {
+        this.executor.execute(() -> {
+          try {
+            this.concurrency.acquire();
+            try {
+              this.deliver(webhook, event);
+            } finally {
+              this.concurrency.release();
+            }
+          } catch (final InterruptedException exception) {
+            Thread.currentThread().interrupt();
+          } finally {
+            this.admission.release();
+          }
+        });
+      } catch (final RejectedExecutionException exception) {
+        this.admission.release();
       }
     }
   }
@@ -121,7 +149,7 @@ public class WebhookPublisher {
 
   private void deliver(final WebhookEntity webhook, final FillEvent event) {
     final String deliveryId = "fill_" + UUID.randomUUID();
-    final String timestamp = Long.toString(Instant.now().getEpochSecond());
+    final String timestamp = Long.toString(this.clock.instant().getEpochSecond());
 
     final byte[] body;
     final String signature;
@@ -134,9 +162,8 @@ public class WebhookPublisher {
       return;
     }
 
-    Exception lastFailure = null;
-    for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      try {
+    try {
+      this.retry.execute(() -> {
         this.http.post()
           .uri(webhook.url())
           .contentType(MediaType.APPLICATION_JSON)
@@ -146,28 +173,34 @@ public class WebhookPublisher {
           .body(body)
           .retrieve()
           .toBodilessEntity();
-        this.webhooks.recordDelivery(webhook, "delivered");
+        return null;
+      });
+      this.webhooks.recordDelivery(webhook, "delivered");
+    } catch (final RetryException exception) {
+      if (Thread.currentThread().isInterrupted()) {
+        // Shutdown interrupted the delivery; leave its previous status unchanged.
         return;
-      } catch (final Exception exception) {
-        lastFailure = exception;
-        if (attempt < MAX_ATTEMPTS) {
-          LOGGER.warn(
-            "Failed to deliver webhook {} to {} (attempt {}/{}): {}",
-            deliveryId,
-            webhook.url(),
-            attempt,
-            MAX_ATTEMPTS,
-            exception.getMessage()
-          );
-          if (!sleep(attempt)) {
-            return;
-          }
-        }
       }
+      if (exception.getLastException() instanceof final Error error) {
+        throw error;
+      }
+      LOGGER.error(
+        "Giving up on webhook delivery {} to {} after {} attempts",
+        deliveryId,
+        webhook.url(),
+        exception.getExceptions().size(),
+        exception
+      );
+      this.webhooks.recordDelivery(webhook, "failed");
     }
+  }
 
-    LOGGER.error("Giving up on webhook delivery {} to {} after {} attempts", deliveryId, webhook.url(), MAX_ATTEMPTS, lastFailure);
-    this.webhooks.recordDelivery(webhook, "failed");
+  private static boolean isRetryable(final Throwable failure) {
+    if (failure instanceof final HttpClientErrorException exception) {
+      return exception.getStatusCode() == HttpStatus.REQUEST_TIMEOUT
+        || exception.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS;
+    }
+    return true;
   }
 
   private byte[] createPayload(final FillEvent event) {
@@ -216,14 +249,4 @@ public class WebhookPublisher {
     }
   }
 
-  private static boolean sleep(final int attempt) {
-    try {
-      final long millis = (long) Math.pow(2.0, attempt - 1) * 1000L + ThreadLocalRandom.current().nextLong(250L);
-      Thread.sleep(millis);
-      return true;
-    } catch (final InterruptedException exception) {
-      Thread.currentThread().interrupt();
-      return false;
-    }
-  }
 }

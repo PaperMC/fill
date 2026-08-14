@@ -30,7 +30,9 @@ public final class AsyncEventPublisher {
   private static final Logger LOGGER = LoggerFactory.getLogger(AsyncEventPublisher.class);
 
   private final ApplicationEventPublisher delegate;
-  private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+  private final ExecutorService executor = Executors.newThreadPerTaskExecutor(
+    Thread.ofVirtual().name("fill-event-", 0).factory()
+  );
 
   public AsyncEventPublisher(final ApplicationEventPublisher delegate) {
     this.delegate = delegate;
