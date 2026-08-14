@@ -16,6 +16,7 @@
 package io.papermc.fill.notification;
 
 import io.papermc.fill.event.FillEvent;
+import io.papermc.fill.model.BuildChannel;
 import java.time.Instant;
 import org.jspecify.annotations.NullMarked;
 
@@ -43,7 +44,7 @@ public record WebhookPayload(String type, Instant timestamp, Data data) {
   public record VersionRef(String id, String key) {
   }
 
-  public record BuildRef(String id, int number, String channel) {
+  public record BuildRef(String id, int number, BuildChannel channel) {
   }
 
   public static WebhookPayload from(final FillEvent event) {
@@ -53,12 +54,12 @@ public record WebhookPayload(String type, Instant timestamp, Data data) {
       case FillEvent.BuildPublished e -> new Data.BuildPublished(
         project,
         version,
-        new BuildRef(e.build().id(), e.build().number(), e.build().channel().name())
+        new BuildRef(e.build().id(), e.build().number(), e.build().channel())
       );
       case FillEvent.BuildPromoted e -> new Data.BuildPromoted(
         project,
         version,
-        new BuildRef(e.build().id(), e.build().number(), e.build().channel().name())
+        new BuildRef(e.build().id(), e.build().number(), e.build().channel())
       );
       case FillEvent.VersionCreated _ -> new Data.VersionCreated(project, version);
       case FillEvent.VersionUpdated _ -> new Data.VersionUpdated(project, version);
