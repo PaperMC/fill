@@ -15,12 +15,12 @@
  */
 package io.papermc.fill.jackson;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.papermc.fill.model.BuildChannel;
-import java.io.IOException;
 import org.jspecify.annotations.NullMarked;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 @Deprecated(forRemoval = true)
 @NullMarked
@@ -30,7 +30,7 @@ public class LegacyBuildChannelSerializer extends StdSerializer<BuildChannel> {
   }
 
   @Override
-  public void serialize(final BuildChannel value, final JsonGenerator gen, final SerializerProvider provider) throws IOException {
+  public void serialize(final BuildChannel value, final JsonGenerator gen, final SerializationContext context) throws JacksonException {
     gen.writeString(switch (value) {
       case ALPHA -> "experimental";
       case BETA -> "experimental";

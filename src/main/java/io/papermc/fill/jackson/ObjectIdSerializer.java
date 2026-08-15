@@ -15,13 +15,13 @@
  */
 package io.papermc.fill.jackson;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import java.io.IOException;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.jackson.JacksonComponent;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 @JacksonComponent
 @NullMarked
@@ -31,7 +31,7 @@ public class ObjectIdSerializer extends StdSerializer<ObjectId> {
   }
 
   @Override
-  public void serialize(final ObjectId value, final JsonGenerator gen, final SerializerProvider provider) throws IOException {
+  public void serialize(final ObjectId value, final JsonGenerator gen, final SerializationContext context) throws JacksonException {
     gen.writeString(value.toHexString());
   }
 }

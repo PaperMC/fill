@@ -15,8 +15,6 @@
  */
 package io.papermc.fill.notification;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import io.papermc.fill.database.WebhookEntity;
 import io.papermc.fill.event.FillEvent;
@@ -52,6 +50,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Delivers {@link FillEvent}s to registered webhook endpoints.
@@ -213,7 +213,7 @@ public class WebhookPublisher {
   private byte[] createPayload(final FillEvent event) {
     try {
       return this.json.writeValueAsBytes(WebhookPayload.from(event));
-    } catch (final JsonProcessingException exception) {
+    } catch (final JacksonException exception) {
       throw new IllegalStateException("Could not serialize webhook payload", exception);
     }
   }
