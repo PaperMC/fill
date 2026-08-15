@@ -23,6 +23,8 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
+import io.papermc.fill.event.AsyncEventPublisher;
+import io.papermc.fill.event.FillEvent;
 import io.papermc.fill.exception.PublishFailedException;
 import io.papermc.fill.exception.StorageWriteException;
 import io.papermc.fill.model.BuildChannel;
@@ -34,7 +36,6 @@ import io.papermc.fill.model.JavaFlags;
 import io.papermc.fill.model.JavaVersion;
 import io.papermc.fill.model.Support;
 import io.papermc.fill.model.request.v3.PublishRequest;
-import io.papermc.fill.notification.BuildListener;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.discord.DiscordNotificationChannel;
 import io.papermc.fill.util.git.GitRepository;
@@ -44,7 +45,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
@@ -103,7 +103,7 @@ public class Publishing3ControllerTest {
   private VersionRepository versions;
   private BuildRepository builds;
   private StorageService storage;
-  private BuildListener listener;
+  private AsyncEventPublisher events;
   private Publishing3Controller controller;
 
   @BeforeEach
@@ -113,14 +113,14 @@ public class Publishing3ControllerTest {
     this.versions = mock(VersionRepository.class);
     this.builds = mock(BuildRepository.class);
     this.storage = mock(StorageService.class);
-    this.listener = mock(BuildListener.class);
+    this.events = mock(AsyncEventPublisher.class);
     this.controller = new Publishing3Controller(
       this.projects,
       this.families,
       this.versions,
       this.builds,
       this.storage,
-      Set.of(this.listener)
+      this.events
     );
 
     when(this.projects.findByKey(PROJECT.key())).thenReturn(Optional.of(PROJECT));
@@ -138,7 +138,7 @@ public class Publishing3ControllerTest {
     final ResponseEntity<?> response = this.controller.publish(request);
 
     assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    final InOrder order = inOrder(this.storage, this.builds, this.listener);
+    final InOrder order = inOrder(this.storage, this.builds, this.events);
     for (final Download download : downloads) {
       order.verify(this.storage).verifyStagedObject(UPLOAD_ID, download);
     }
@@ -149,7 +149,24 @@ public class Publishing3ControllerTest {
     for (final Download download : downloads) {
       order.verify(this.storage).deleteStagedObject(UPLOAD_ID, download.name());
     }
-    order.verify(this.listener).onBuildPublished(eq(PROJECT), eq(VERSION), any(BuildEntity.class));
+    order.verify(this.events).publish(any(FillEvent.BuildPublished.class));
+  }
+
+  @Test
+  void publishesVersionCreatedBeforeBuildPublishedWhenCreatingMissingVersion() {
+    final PublishRequest request = request();
+    when(this.versions.findByProjectAndKey(PROJECT, VERSION.key())).thenReturn(Optional.empty());
+    when(this.versions.save(any(VersionEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(this.builds.findByVersionAndNumber(any(VersionEntity.class), eq(request.build()))).thenReturn(Optional.empty());
+    when(this.builds.save(any(BuildEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    this.controller.publish(request);
+
+    final InOrder order = inOrder(this.versions, this.builds, this.events);
+    order.verify(this.versions).save(any(VersionEntity.class));
+    order.verify(this.events).publish(any(FillEvent.VersionCreated.class));
+    order.verify(this.builds).save(any(BuildEntity.class));
+    order.verify(this.events).publish(any(FillEvent.BuildPublished.class));
   }
 
   @Test
@@ -166,7 +183,7 @@ public class Publishing3ControllerTest {
     for (final Download download : downloads) {
       verify(this.storage, never()).deleteStagedObject(UPLOAD_ID, download.name());
     }
-    verifyNoInteractions(this.listener);
+    verifyNoInteractions(this.events);
   }
 
   @Test
@@ -192,7 +209,7 @@ public class Publishing3ControllerTest {
     }
     verifyNoMoreInteractions(this.storage);
     verify(this.builds, never()).save(any(BuildEntity.class));
-    verifyNoInteractions(this.listener);
+    verifyNoInteractions(this.events);
   }
 
   private static PublishRequest request() {

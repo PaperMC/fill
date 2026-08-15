@@ -33,6 +33,7 @@ import io.papermc.fill.database.BuildEntity;
 import io.papermc.fill.database.BuildRepository;
 import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.VersionEntity;
+import io.papermc.fill.event.FillEvent;
 import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.Commit;
@@ -54,12 +55,13 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnProperty("app.discord.token")
 @NullMarked
-public class DiscordNotificationPublisher implements BuildListener {
+public class DiscordNotificationPublisher {
   private final ApplicationDiscordProperties properties;
 
   private final BuildRepository builds;
@@ -80,8 +82,11 @@ public class DiscordNotificationPublisher implements BuildListener {
     this.discord = discord;
   }
 
-  @Override
-  public void onBuildPublished(final ProjectEntity project, final VersionEntity version, final BuildWithDownloads<Download> build) {
+  @EventListener
+  public void onBuildPublished(final FillEvent.BuildPublished event) {
+    final ProjectEntity project = event.project();
+    final VersionEntity version = event.version();
+    final BuildWithDownloads<Download> build = event.build();
     final GitRepository repository = Objects.requireNonNullElse(version.gitRepository(), project.gitRepository());
     final Container content = this.createContent(project, version, repository, build);
     final Button downloadButton = this.createDownloadButton(project, version, build);

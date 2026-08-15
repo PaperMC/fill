@@ -1,5 +1,5 @@
 ### create a presigned upload URL
-POST localhost:8080/v3/upload
+POST localhost:8080/v3/publishing/stage
 Content-Type: application/json
 Authorization: Basic admin admin
 
@@ -28,7 +28,7 @@ x-amz-meta-sha256: 66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35
 < test.txt
 
 ### publish a build
-POST localhost:8080/v3/publish
+POST localhost:8080/v3/publishing/publish
 Content-Type: application/json
 Authorization: Basic admin admin
 

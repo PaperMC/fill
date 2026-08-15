@@ -25,6 +25,8 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
+import io.papermc.fill.event.AsyncEventPublisher;
+import io.papermc.fill.event.FillEvent;
 import io.papermc.fill.exception.ChecksumMismatchException;
 import io.papermc.fill.exception.DownloadNotFoundException;
 import io.papermc.fill.exception.DuplicateBuildException;
@@ -42,7 +44,6 @@ import io.papermc.fill.model.request.UploadRequest;
 import io.papermc.fill.model.request.v3.PublishRequest;
 import io.papermc.fill.model.response.PublishResponse;
 import io.papermc.fill.model.response.UploadResponse;
-import io.papermc.fill.notification.BuildListener;
 import io.papermc.fill.service.PublishingService;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.crypto.HashAlgorithm;
@@ -57,7 +58,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
-import java.util.Set;
 import java.util.UUID;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
@@ -92,7 +92,7 @@ public class PublishController {
   private final BuildRepository builds;
   private final PublishingService publishing;
   private final StorageService storage;
-  private final Set<BuildListener> buildListeners;
+  private final AsyncEventPublisher events;
   private final LoadingCache<UUID, StagingInstance> instances = Caffeine.newBuilder()
     .expireAfterAccess(Duration.ofMinutes(5))
     .build(_ -> new StagingInstance());
@@ -105,7 +105,7 @@ public class PublishController {
     final BuildRepository builds,
     final PublishingService publishing,
     final StorageService storage,
-    final Set<BuildListener> buildListeners
+    final AsyncEventPublisher events
   ) {
     this.projects = projects;
     this.families = families;
@@ -113,7 +113,7 @@ public class PublishController {
     this.builds = builds;
     this.publishing = publishing;
     this.storage = storage;
-    this.buildListeners = buildListeners;
+    this.events = events;
   }
 
   @CrossOrigin(methods = RequestMethod.POST)
@@ -233,9 +233,7 @@ public class PublishController {
 
     this.builds.save(build);
 
-    for (final BuildListener listener : this.buildListeners) {
-      listener.onBuildPublished(project, version, build);
-    }
+    this.events.publish(new FillEvent.BuildPublished(createdAt, project, version, build));
 
     return Responses.created(new PublishResponse(true, build._id()));
   }

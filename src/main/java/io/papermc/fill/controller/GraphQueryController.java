@@ -24,6 +24,7 @@ import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.ProjectRepository;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.database.VersionRepository;
+import io.papermc.fill.database.WebhookEntity;
 import io.papermc.fill.exception.BuildNotFoundException;
 import io.papermc.fill.exception.FamilyNotFoundException;
 import io.papermc.fill.exception.ProjectNotFoundException;
@@ -37,6 +38,7 @@ import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.BuildWithDownloadsImpl;
 import io.papermc.fill.model.Commit;
+import io.papermc.fill.model.DeliveryStatus;
 import io.papermc.fill.model.DownloadWithUrl;
 import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Keyed;
@@ -46,6 +48,7 @@ import io.papermc.fill.model.SupportStatus;
 import io.papermc.fill.model.Timestamped;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.service.StorageService;
+import io.papermc.fill.service.WebhookService;
 import io.papermc.fill.util.graphql.CursorCodec;
 import io.papermc.fill.util.graphql.CursorPaginator;
 import java.net.URI;
@@ -65,6 +68,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 @Controller
@@ -88,6 +92,7 @@ public class GraphQueryController {
   private final VersionRepository versions;
   private final BuildRepository builds;
   private final StorageService storage;
+  private final WebhookService webhooks;
 
   @Autowired
   public GraphQueryController(
@@ -95,13 +100,15 @@ public class GraphQueryController {
     final FamilyRepository families,
     final VersionRepository versions,
     final BuildRepository builds,
-    final StorageService storage
+    final StorageService storage,
+    final WebhookService webhooks
   ) {
     this.projects = projects;
     this.families = families;
     this.versions = versions;
     this.builds = builds;
     this.storage = storage;
+    this.webhooks = webhooks;
   }
 
   @QueryMapping("projects")
@@ -326,6 +333,41 @@ public class GraphQueryController {
     final String key
   ) {
     return build.getDownloadByKey(key);
+  }
+
+  @QueryMapping("webhooks")
+  @PreAuthorize("hasRole('API_MANAGE')")
+  public List<WebhookEntity> getWebhooks() {
+    return this.webhooks.list();
+  }
+
+  @SchemaMapping(typeName = "Webhook", field = "id")
+  public String mapWebhookId(final WebhookEntity webhook) {
+    return webhook.id();
+  }
+
+  @SchemaMapping(typeName = "Webhook", field = "url")
+  public String mapWebhookUrl(final WebhookEntity webhook) {
+    return webhook.url();
+  }
+
+  @SchemaMapping(typeName = "Webhook", field = "createdAt")
+  public ZonedDateTime mapWebhookCreatedAt(final WebhookEntity webhook) {
+    return webhook.createdAt().atZone(ZoneOffset.UTC);
+  }
+
+  @SchemaMapping(typeName = "Webhook", field = "lastDeliveryStatus")
+  public @Nullable DeliveryStatus mapWebhookLastDeliveryStatus(final WebhookEntity webhook) {
+    return webhook.lastDeliveryStatus();
+  }
+
+  @SchemaMapping(typeName = "Webhook", field = "lastDeliveryAt")
+  public @Nullable ZonedDateTime mapWebhookLastDeliveryAt(final WebhookEntity webhook) {
+    final Instant lastDeliveryAt = webhook.lastDeliveryAt();
+    if (lastDeliveryAt == null) {
+      return null;
+    }
+    return lastDeliveryAt.atZone(ZoneOffset.UTC);
   }
 
   private Function<BuildEntity, BuildWithDownloads<DownloadWithUrl>> mapBuild(final Project project, final Version version) {
