@@ -1,13 +1,13 @@
 [versions]
-indra = "4.0.0"
+indra = "4.1.0"
 
 [plugins]
-gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version = "2.5.7" }
+gradleGitProperties = { id = "com.gorylenko.gradle-git-properties", version = "4.0.1" }
 indra = { id = "net.kyori.indra", version.ref = "indra" }
 indra-checkstyle = { id = "net.kyori.indra.checkstyle", version.ref = "indra" }
 indra-git = { id = "net.kyori.indra.git", version.ref = "indra" }
-jib = { id = "com.google.cloud.tools.jib", version = "3.5.3" }
+jib = { id = "com.google.cloud.tools.jib", version = "3.5.4" }
 sentry = { id = "io.sentry.jvm.gradle", version = "6.3.0" }
-spotless = { id = "com.diffplug.spotless", version = "8.4.0" }
-spring-boot = { id = "org.springframework.boot", version = "4.0.6" }
+spotless = { id = "com.diffplug.spotless", version = "8.9.0" }
+spring-boot = { id = "org.springframework.boot", version = "4.1.0" }
 spring-deps = { id = "io.spring.dependency-management", version = "1.1.7" }
