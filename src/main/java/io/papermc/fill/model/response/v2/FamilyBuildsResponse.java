@@ -16,13 +16,13 @@
 package io.papermc.fill.model.response.v2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.papermc.fill.jackson.LegacyBuildChannelSerializer;
 import io.papermc.fill.model.BuildChannel;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 @Deprecated(forRemoval = true)
 @NullMarked
