@@ -23,7 +23,6 @@ import org.jspecify.annotations.NullMarked;
 /** The payload delivered for a {@link FillEvent}. */
 @NullMarked
 public record WebhookPayload(String type, Instant timestamp, Data data) {
-
   @NullMarked
   public sealed interface Data permits Data.BuildPublished, Data.BuildPromoted, Data.VersionCreated, Data.VersionUpdated, Data.FamilyCreated, Data.FamilyUpdated, Data.FamilyDeleted {
     @NullMarked

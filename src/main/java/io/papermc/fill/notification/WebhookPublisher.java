@@ -249,5 +249,4 @@ public class WebhookPublisher {
       return this.status;
     }
   }
-
 }

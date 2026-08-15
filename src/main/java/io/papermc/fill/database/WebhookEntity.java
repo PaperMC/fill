@@ -62,5 +62,4 @@ public class WebhookEntity extends AbstractEntity {
   public @Nullable Instant lastDeliveryAt() {
     return this.lastDeliveryAt;
   }
-
 }
