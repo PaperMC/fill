@@ -84,6 +84,7 @@ spotless {
 
 tasks.named("sourcesJar") {
   dependsOn(tasks.named("collectExternalDependenciesForSentry"))
+  dependsOn(tasks.named("generateGitProperties"))
   dependsOn(tasks.named("generateSentryDebugMetaPropertiesjava"))
 }
 
@@ -99,12 +100,12 @@ repositories {
 dependencies {
   annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
-  compileOnlyApi("org.jspecify:jspecify:1.0.0")
+  compileOnlyApi("org.jspecify:jspecify:1.0.1")
 
   developmentOnly("org.springframework.boot:spring-boot-devtools")
 
-  implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.18.0")
-  implementation("com.bucket4j:bucket4j_jdk17-core:8.18.0")
+  implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.19.0")
+  implementation("com.bucket4j:bucket4j_jdk17-core:8.19.0")
   implementation("com.discord4j:discord4j-core:3.3.2")
   implementation("com.github.ben-manes.caffeine:caffeine:3.2.4")
   implementation("com.google.guava:guava:33.6.0-jre")
@@ -114,7 +115,7 @@ dependencies {
   implementation("io.jsonwebtoken:jjwt-jackson:0.13.0")
   implementation("io.micrometer:micrometer-registry-prometheus")
   implementation("org.apache.commons:commons-text:1.15.0")
-  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
   implementation("org.springframework.boot:spring-boot-starter-graphql")
@@ -122,7 +123,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-validation")
   implementation("org.springframework.boot:spring-boot-starter-web")
-  implementation("software.amazon.awssdk:s3:2.44.2")
+  implementation("software.amazon.awssdk:s3:2.53.1")
 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
   testImplementation("org.springframework.graphql:spring-graphql-test")
