@@ -22,6 +22,7 @@ import io.papermc.fill.database.WebhookEntity;
 import io.papermc.fill.event.FillEvent;
 import io.papermc.fill.model.DeliveryStatus;
 import io.papermc.fill.service.WebhookService;
+import io.papermc.fill.util.concurrent.ConcurrentUtil;
 import jakarta.annotation.PreDestroy;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -72,6 +73,7 @@ public class WebhookPublisher {
   private static final int MAX_QUEUED_DELIVERIES = 256;
   private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
+  private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
 
   private final WebhookService webhooks;
   private final Clock clock;
@@ -143,7 +145,7 @@ public class WebhookPublisher {
 
   @PreDestroy
   public void close() {
-    this.executor.shutdownNow();
+    ConcurrentUtil.shutdownExecutor(this.executor, SHUTDOWN_TIMEOUT);
   }
 
   private void deliver(final WebhookEntity webhook, final FillEvent event) {

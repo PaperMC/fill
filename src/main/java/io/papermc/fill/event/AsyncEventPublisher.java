@@ -15,7 +15,9 @@
  */
 package io.papermc.fill.event;
 
+import io.papermc.fill.util.concurrent.ConcurrentUtil;
 import jakarta.annotation.PreDestroy;
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.jspecify.annotations.NullMarked;
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Component;
 @NullMarked
 public final class AsyncEventPublisher {
   private static final Logger LOGGER = LoggerFactory.getLogger(AsyncEventPublisher.class);
+  private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(5);
 
   private final ApplicationEventPublisher delegate;
   private final ExecutorService executor = Executors.newThreadPerTaskExecutor(
@@ -50,6 +53,6 @@ public final class AsyncEventPublisher {
 
   @PreDestroy
   public void close() {
-    this.executor.shutdown();
+    ConcurrentUtil.shutdownExecutor(this.executor, SHUTDOWN_TIMEOUT);
   }
 }
