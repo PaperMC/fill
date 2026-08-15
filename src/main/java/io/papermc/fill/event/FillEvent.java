@@ -16,6 +16,7 @@
 package io.papermc.fill.event;
 
 import io.papermc.fill.database.BuildEntity;
+import io.papermc.fill.database.FamilyEntity;
 import io.papermc.fill.database.ProjectEntity;
 import io.papermc.fill.database.VersionEntity;
 import io.papermc.fill.model.BuildWithDownloads;
@@ -24,14 +25,28 @@ import java.time.Instant;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public sealed interface FillEvent permits FillEvent.BuildPublished, FillEvent.BuildPromoted, FillEvent.VersionCreated, FillEvent.VersionUpdated {
+public sealed interface FillEvent permits FillEvent.ProjectEvent {
   String type();
 
   Instant time();
 
-  ProjectEntity project();
+  /** An event concerning a project. */
+  @NullMarked
+  sealed interface ProjectEvent extends FillEvent permits FillEvent.VersionEvent, FillEvent.FamilyEvent {
+    ProjectEntity project();
+  }
 
-  VersionEntity version();
+  /** An event concerning a version (and therefore its project). */
+  @NullMarked
+  sealed interface VersionEvent extends ProjectEvent permits FillEvent.BuildPublished, FillEvent.BuildPromoted, FillEvent.VersionCreated, FillEvent.VersionUpdated {
+    VersionEntity version();
+  }
+
+  /** An event concerning a version group (a family). */
+  @NullMarked
+  sealed interface FamilyEvent extends ProjectEvent permits FillEvent.FamilyCreated, FillEvent.FamilyUpdated, FillEvent.FamilyDeleted {
+    FamilyEntity family();
+  }
 
   @NullMarked
   record BuildPublished(
@@ -39,7 +54,7 @@ public sealed interface FillEvent permits FillEvent.BuildPublished, FillEvent.Bu
     ProjectEntity project,
     VersionEntity version,
     BuildWithDownloads<Download> build
-  ) implements FillEvent {
+  ) implements VersionEvent {
     @Override
     public String type() {
       return "build.published";
@@ -52,7 +67,7 @@ public sealed interface FillEvent permits FillEvent.BuildPublished, FillEvent.Bu
     ProjectEntity project,
     VersionEntity version,
     BuildEntity build
-  ) implements FillEvent {
+  ) implements VersionEvent {
     @Override
     public String type() {
       return "build.promoted";
@@ -64,7 +79,7 @@ public sealed interface FillEvent permits FillEvent.BuildPublished, FillEvent.Bu
     Instant time,
     ProjectEntity project,
     VersionEntity version
-  ) implements FillEvent {
+  ) implements VersionEvent {
     @Override
     public String type() {
       return "version.created";
@@ -76,10 +91,46 @@ public sealed interface FillEvent permits FillEvent.BuildPublished, FillEvent.Bu
     Instant time,
     ProjectEntity project,
     VersionEntity version
-  ) implements FillEvent {
+  ) implements VersionEvent {
     @Override
     public String type() {
       return "version.updated";
+    }
+  }
+
+  @NullMarked
+  record FamilyCreated(
+    Instant time,
+    ProjectEntity project,
+    FamilyEntity family
+  ) implements FamilyEvent {
+    @Override
+    public String type() {
+      return "family.created";
+    }
+  }
+
+  @NullMarked
+  record FamilyUpdated(
+    Instant time,
+    ProjectEntity project,
+    FamilyEntity family
+  ) implements FamilyEvent {
+    @Override
+    public String type() {
+      return "family.updated";
+    }
+  }
+
+  @NullMarked
+  record FamilyDeleted(
+    Instant time,
+    ProjectEntity project,
+    FamilyEntity family
+  ) implements FamilyEvent {
+    @Override
+    public String type() {
+      return "family.deleted";
     }
   }
 }

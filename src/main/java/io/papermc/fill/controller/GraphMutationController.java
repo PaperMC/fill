@@ -115,6 +115,7 @@ public class GraphMutationController {
       input.key(),
       input.java()
     ));
+    this.events.publish(new FillEvent.FamilyCreated(createdAt, project, entity));
     return new CreateFamilyPayload(entity);
   }
 
@@ -131,6 +132,7 @@ public class GraphMutationController {
       family.setJava(java);
     }
     family = this.families.save(family);
+    this.events.publish(new FillEvent.FamilyUpdated(this.clock.instant(), project, family));
     return new UpdateFamilyPayload(family);
   }
 
@@ -146,6 +148,7 @@ public class GraphMutationController {
       throw new FamilyInUseException("Cannot delete this family because one or more versions are still associated with it.");
     }
     this.families.delete(family);
+    this.events.publish(new FillEvent.FamilyDeleted(this.clock.instant(), project, family));
     return new DeleteFamilyPayload(true);
   }
 

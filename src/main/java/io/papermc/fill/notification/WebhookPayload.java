@@ -25,7 +25,7 @@ import org.jspecify.annotations.NullMarked;
 public record WebhookPayload(String type, Instant timestamp, Data data) {
 
   @NullMarked
-  public sealed interface Data permits Data.BuildPublished, Data.BuildPromoted, Data.VersionCreated, Data.VersionUpdated {
+  public sealed interface Data permits Data.BuildPublished, Data.BuildPromoted, Data.VersionCreated, Data.VersionUpdated, Data.FamilyCreated, Data.FamilyUpdated, Data.FamilyDeleted {
     @NullMarked
     record BuildPublished(ProjectRef project, VersionRef version, BuildRef build) implements Data {
     }
@@ -41,6 +41,18 @@ public record WebhookPayload(String type, Instant timestamp, Data data) {
     @NullMarked
     record VersionUpdated(ProjectRef project, VersionRef version) implements Data {
     }
+
+    @NullMarked
+    record FamilyCreated(ProjectRef project, FamilyRef family) implements Data {
+    }
+
+    @NullMarked
+    record FamilyUpdated(ProjectRef project, FamilyRef family) implements Data {
+    }
+
+    @NullMarked
+    record FamilyDeleted(ProjectRef project, FamilyRef family) implements Data {
+    }
   }
 
   @NullMarked
@@ -52,26 +64,43 @@ public record WebhookPayload(String type, Instant timestamp, Data data) {
   }
 
   @NullMarked
+  public record FamilyRef(String id, String key) {
+  }
+
+  @NullMarked
   public record BuildRef(String id, int number, BuildChannel channel) {
   }
 
   public static WebhookPayload from(final FillEvent event) {
-    final ProjectRef project = new ProjectRef(event.project().id(), event.project().key());
-    final VersionRef version = new VersionRef(event.version().id(), event.version().key());
     final Data data = switch (event) {
       case FillEvent.BuildPublished e -> new Data.BuildPublished(
-        project,
-        version,
+        project(e),
+        version(e),
         new BuildRef(e.build().id(), e.build().number(), e.build().channel())
       );
       case FillEvent.BuildPromoted e -> new Data.BuildPromoted(
-        project,
-        version,
+        project(e),
+        version(e),
         new BuildRef(e.build().id(), e.build().number(), e.build().channel())
       );
-      case FillEvent.VersionCreated _ -> new Data.VersionCreated(project, version);
-      case FillEvent.VersionUpdated _ -> new Data.VersionUpdated(project, version);
+      case FillEvent.VersionCreated e -> new Data.VersionCreated(project(e), version(e));
+      case FillEvent.VersionUpdated e -> new Data.VersionUpdated(project(e), version(e));
+      case FillEvent.FamilyCreated e -> new Data.FamilyCreated(project(e), family(e));
+      case FillEvent.FamilyUpdated e -> new Data.FamilyUpdated(project(e), family(e));
+      case FillEvent.FamilyDeleted e -> new Data.FamilyDeleted(project(e), family(e));
     };
     return new WebhookPayload(event.type(), event.time(), data);
+  }
+
+  private static ProjectRef project(final FillEvent.ProjectEvent event) {
+    return new ProjectRef(event.project().id(), event.project().key());
+  }
+
+  private static VersionRef version(final FillEvent.VersionEvent event) {
+    return new VersionRef(event.version().id(), event.version().key());
+  }
+
+  private static FamilyRef family(final FillEvent.FamilyEvent event) {
+    return new FamilyRef(event.family().id(), event.family().key());
   }
 }
