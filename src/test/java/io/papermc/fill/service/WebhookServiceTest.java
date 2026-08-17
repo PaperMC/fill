@@ -18,6 +18,7 @@ package io.papermc.fill.service;
 import io.papermc.fill.database.WebhookEntity;
 import io.papermc.fill.database.WebhookRepository;
 import io.papermc.fill.model.DeliveryStatus;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -40,7 +41,7 @@ class WebhookServiceTest {
   void createsStandardWebhookSecret() {
     final WebhookRepository repository = mock(WebhookRepository.class);
     when(repository.save(any(WebhookEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    final WebhookService service = new WebhookService(repository, Clock.fixed(NOW, ZoneOffset.UTC));
+    final WebhookService service = new WebhookService(Clock.fixed(NOW, ZoneOffset.UTC), repository);
 
     final WebhookEntity webhook = service.create("https://example.com/webhook");
 
@@ -51,7 +52,7 @@ class WebhookServiceTest {
   @Test
   void recordsDeliveryWithAnAtomicUpdate() {
     final WebhookRepository repository = mock(WebhookRepository.class);
-    final WebhookService service = new WebhookService(repository, Clock.fixed(NOW, ZoneOffset.UTC));
+    final WebhookService service = new WebhookService(Clock.fixed(NOW, ZoneOffset.UTC), repository);
     final WebhookEntity webhook = WebhookEntity.create(
       new org.bson.types.ObjectId("000000000000000000000001"),
       NOW,
@@ -62,5 +63,17 @@ class WebhookServiceTest {
     service.recordDelivery(webhook, DeliveryStatus.DELIVERED);
 
     verify(repository).updateDelivery(webhook._id(), DeliveryStatus.DELIVERED, NOW);
+  }
+
+  @Test
+  void signsWithDecodedStandardWebhookSecret() {
+    final String signature = WebhookService.createSignature(
+      "whsec_AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
+      "fill_test",
+      "1700000000",
+      "{\"type\":\"build.published\"}".getBytes(StandardCharsets.UTF_8)
+    );
+
+    assertEquals("v1,gjBnzVZudyFih59/Knjh7oE1wC2z3CMPV2RkxEBJBQk=", signature);
   }
 }

@@ -15,11 +15,16 @@
  */
 package io.papermc.fill.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public record Checksums(
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  @Schema(pattern = "\\b[a-fA-F0-9]{32}\\b")
+  @Nullable String md5,
   @Schema(pattern = "\\b[a-fA-F0-9]{64}\\b")
   String sha256
 ) {

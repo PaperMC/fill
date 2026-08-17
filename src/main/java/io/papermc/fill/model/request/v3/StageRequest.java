@@ -22,8 +22,6 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public record StageRequest(
   UUID id,
-  Download download,
-  String contentType,
-  String contentMd5
+  Download download
 ) {
 }

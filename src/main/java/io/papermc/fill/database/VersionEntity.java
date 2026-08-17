@@ -114,9 +114,4 @@ public class VersionEntity extends AbstractEntity implements Version {
   public @Nullable ObjectId mostRecentPromotedBuild() {
     return this.mostRecentPromotedBuild;
   }
-
-  @Deprecated
-  public void setMostRecentPromotedBuild(final @Nullable BuildEntity mostRecentPromotedBuild) {
-    this.mostRecentPromotedBuild = mostRecentPromotedBuild != null ? mostRecentPromotedBuild._id() : null;
-  }
 }

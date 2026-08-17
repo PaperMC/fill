@@ -26,10 +26,12 @@ import org.springframework.web.bind.annotation.RestController;
 @Hidden
 @NullMarked
 @RestController
-public class Data1Controller {
+public class Api1MetaController {
   @GetMapping({
-    "/v1/{project:[a-z]+}/{version:[0-9pre.-]+}/{build:\\d+}/download",
-    "/v1/{project:[a-z]+}/{version:[0-9pre.-]+}/latest/download"
+    "/v1/{project:[a-z]+}",
+    "/v1/{project:[a-z]+}/{version:[0-9pre.-]+}",
+    "/v1/{project:[a-z]+}/{version:[0-9pre.-]+}/{build:\\d+}",
+    "/v1/{project:[a-z]+}/{version:[0-9pre.-]+}/latest"
   })
   @SuppressWarnings("MVCPathVariableInspection")
   public ResponseEntity<?> gone() {

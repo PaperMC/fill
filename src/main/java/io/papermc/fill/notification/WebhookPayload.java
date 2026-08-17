@@ -26,67 +26,103 @@ public record WebhookPayload(String type, Instant timestamp, Data data) {
   @NullMarked
   public sealed interface Data permits Data.BuildPublished, Data.BuildPromoted, Data.VersionCreated, Data.VersionUpdated, Data.FamilyCreated, Data.FamilyUpdated, Data.FamilyDeleted {
     @NullMarked
-    record BuildPublished(ProjectRef project, VersionRef version, BuildRef build) implements Data {
+    record BuildPublished(
+      ProjectRef project,
+      VersionRef version,
+      BuildRef build
+    ) implements Data {
     }
 
     @NullMarked
-    record BuildPromoted(ProjectRef project, VersionRef version, BuildRef build) implements Data {
+    record BuildPromoted(
+      ProjectRef project,
+      VersionRef version,
+      BuildRef build
+    ) implements Data {
     }
 
     @NullMarked
-    record VersionCreated(ProjectRef project, VersionRef version) implements Data {
+    record VersionCreated(
+      ProjectRef project,
+      VersionRef version
+    ) implements Data {
     }
 
     @NullMarked
-    record VersionUpdated(ProjectRef project, VersionRef version) implements Data {
+    record VersionUpdated(
+      ProjectRef project,
+      VersionRef version
+    ) implements Data {
     }
 
     @NullMarked
-    record FamilyCreated(ProjectRef project, FamilyRef family) implements Data {
+    record FamilyCreated(
+      ProjectRef project,
+      FamilyRef family
+    ) implements Data {
     }
 
     @NullMarked
-    record FamilyUpdated(ProjectRef project, FamilyRef family) implements Data {
+    record FamilyUpdated(
+      ProjectRef project,
+      FamilyRef family
+    ) implements Data {
     }
 
     @NullMarked
-    record FamilyDeleted(ProjectRef project, FamilyRef family) implements Data {
+    record FamilyDeleted(
+      ProjectRef project,
+      FamilyRef family
+    ) implements Data {
     }
   }
 
   @NullMarked
-  public record ProjectRef(String id, String key) {
+  public record ProjectRef(
+    String id,
+    String key
+  ) {
   }
 
   @NullMarked
-  public record VersionRef(String id, String key) {
+  public record VersionRef(
+    String id,
+    String key
+  ) {
   }
 
   @NullMarked
-  public record FamilyRef(String id, String key) {
+  public record FamilyRef(
+    String id,
+    String key
+  ) {
   }
 
   @NullMarked
-  public record BuildRef(String id, int number, BuildChannel channel) {
+  public record BuildRef(
+    String id,
+    int number,
+    BuildChannel channel
+  ) {
   }
 
   public static WebhookPayload from(final FillEvent event) {
     final Data data = switch (event) {
-      case FillEvent.BuildPublished e -> new Data.BuildPublished(
+      case final FillEvent.BuildPublished e -> new Data.BuildPublished(
         project(e),
         version(e),
         new BuildRef(e.build().id(), e.build().number(), e.build().channel())
       );
-      case FillEvent.BuildPromoted e -> new Data.BuildPromoted(
+      case final FillEvent.BuildPromoted e -> new Data.BuildPromoted(
         project(e),
         version(e),
         new BuildRef(e.build().id(), e.build().number(), e.build().channel())
       );
-      case FillEvent.VersionCreated e -> new Data.VersionCreated(project(e), version(e));
-      case FillEvent.VersionUpdated e -> new Data.VersionUpdated(project(e), version(e));
-      case FillEvent.FamilyCreated e -> new Data.FamilyCreated(project(e), family(e));
-      case FillEvent.FamilyUpdated e -> new Data.FamilyUpdated(project(e), family(e));
-      case FillEvent.FamilyDeleted e -> new Data.FamilyDeleted(project(e), family(e));
+      case final FillEvent.VersionCreated e -> new Data.VersionCreated(project(e), version(e));
+      case final FillEvent.VersionUpdated e -> new Data.VersionUpdated(project(e), version(e));
+      case final FillEvent.FamilyCreated e -> new Data.FamilyCreated(project(e), family(e));
+      case final FillEvent.FamilyUpdated e -> new Data.FamilyUpdated(project(e), family(e));
+      case final FillEvent.FamilyDeleted e -> new Data.FamilyDeleted(project(e), family(e));
     };
     return new WebhookPayload(event.type(), event.time(), data);
   }

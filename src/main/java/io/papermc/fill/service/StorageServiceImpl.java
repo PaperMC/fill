@@ -15,6 +15,8 @@
  */
 package io.papermc.fill.service;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.io.BaseEncoding;
 import io.papermc.fill.configuration.properties.ApplicationApiProperties;
 import io.papermc.fill.exception.StorageReadException;
 import io.papermc.fill.exception.StorageWriteException;
@@ -28,6 +30,7 @@ import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -60,6 +63,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 @NullMarked
 @Service
 public class StorageServiceImpl implements StorageService {
+  private static final String METADATA_SHA256 = "sha256";
   // The bucket must expire abandoned objects under this prefix with a lifecycle rule
   // to prevent object leaks from failed publications.
   private static final String STAGING_PREFIX = "staging/";
@@ -119,41 +123,48 @@ public class StorageServiceImpl implements StorageService {
   @Override
   public URI createUploadUrl(
     final UUID id,
-    final Download download,
-    final String contentMd5,
-    final MimeType type
+    final Download download
   ) throws StorageWriteException {
-    final String path = stagingPath(id, download.name());
+    final String path = createStagingPath(id, download.name());
     final PutObjectRequest request = PutObjectRequest.builder()
       .bucket(this.properties.storage().s3().bucket())
       .key(path)
       .contentLength((long) download.size())
-      .contentType(type.toString())
-      .contentMD5(contentMd5)
-      .metadata(Map.of("sha256", download.checksums().sha256()))
+      .contentMD5(generateContentMd5(download.checksums().md5()))
+      .contentType(download.type())
+      .metadata(Map.of(METADATA_SHA256, download.checksums().sha256()))
       .build();
     try {
-      return URI.create(this.presigner.presignPutObject(PutObjectPresignRequest.builder()
-        .signatureDuration(UPLOAD_URL_DURATION)
-        .putObjectRequest(request)
-        .build()).url().toString());
+      return URI.create(this.presigner.presignPutObject(
+        PutObjectPresignRequest.builder()
+          .signatureDuration(UPLOAD_URL_DURATION)
+          .putObjectRequest(request)
+          .build()
+      ).url().toString());
     } catch (final SdkException e) {
       throw createStorageWriteException(download, path, "s3 exception", e);
     }
   }
 
+  @VisibleForTesting
+  static String generateContentMd5(final String string) {
+    return Base64.getEncoder().encodeToString(BaseEncoding.base16().lowerCase().decode(string));
+  }
+
   @Override
   public void verifyStagedObject(final UUID id, final Download download) throws StorageWriteException {
-    final String path = stagingPath(id, download.name());
+    final String path = createStagingPath(id, download.name());
     try {
-      final HeadObjectResponse response = this.s3.headObject(HeadObjectRequest.builder()
-        .bucket(this.properties.storage().s3().bucket())
-        .key(path)
-        .build());
+      final HeadObjectResponse response = this.s3.headObject(
+        HeadObjectRequest.builder()
+          .bucket(this.properties.storage().s3().bucket())
+          .key(path)
+          .build()
+      );
       if (response.contentLength() != download.size()) {
         throw createStorageWriteException(download, path, String.format("expected size %d but got %d", download.size(), response.contentLength()), new IllegalArgumentException());
       }
-      final String actualSha256 = response.metadata().get("sha256");
+      final String actualSha256 = response.metadata().get(METADATA_SHA256);
       if (!download.checksums().sha256().equals(actualSha256)) {
         throw createStorageWriteException(download, path, String.format("expected SHA-256 %s but got %s", download.checksums().sha256(), actualSha256), new IllegalArgumentException());
       }
@@ -171,15 +182,17 @@ public class StorageServiceImpl implements StorageService {
     final Download download
   ) throws StorageWriteException {
     final ApplicationApiProperties.Storage properties = this.properties.storage();
-    final String source = stagingPath(id, download.name());
+    final String source = createStagingPath(id, download.name());
     final String destination = StorageService.createPath(properties.path(), project, version, build, download);
     try {
-      this.s3.copyObject(CopyObjectRequest.builder()
-        .sourceBucket(properties.s3().bucket())
-        .sourceKey(source)
-        .destinationBucket(properties.s3().bucket())
-        .destinationKey(destination)
-        .build());
+      this.s3.copyObject(
+        CopyObjectRequest.builder()
+          .sourceBucket(properties.s3().bucket())
+          .sourceKey(source)
+          .destinationBucket(properties.s3().bucket())
+          .destinationKey(destination)
+          .build()
+      );
     } catch (final SdkException e) {
       throw createStorageWriteException(download, destination, "s3 exception", e);
     }
@@ -187,12 +200,14 @@ public class StorageServiceImpl implements StorageService {
 
   @Override
   public void deleteStagedObject(final UUID id, final String filename) throws StorageWriteException {
-    final String path = stagingPath(id, filename);
+    final String path = createStagingPath(id, filename);
     try {
-      this.s3.deleteObject(DeleteObjectRequest.builder()
-        .bucket(this.properties.storage().s3().bucket())
-        .key(path)
-        .build());
+      this.s3.deleteObject(
+        DeleteObjectRequest.builder()
+          .bucket(this.properties.storage().s3().bucket())
+          .key(path)
+          .build()
+      );
     } catch (final SdkException e) {
       throw createStorageWriteException(filename, path, "s3 exception", e);
     }
@@ -251,7 +266,7 @@ public class StorageServiceImpl implements StorageService {
     };
   }
 
-  private static String stagingPath(final UUID id, final String filename) {
+  private static String createStagingPath(final UUID id, final String filename) {
     return String.format("%s%s/%s", STAGING_PREFIX, id, filename);
   }
 

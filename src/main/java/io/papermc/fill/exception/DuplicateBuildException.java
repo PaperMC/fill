@@ -22,7 +22,7 @@ import org.springframework.graphql.execution.ErrorType;
 @NullMarked
 public class DuplicateBuildException extends AppException {
   public DuplicateBuildException() {
-    super("A build with the specified name already exists for this version.");
+    super("A build with the specified number already exists for this version.");
   }
 
   @Override

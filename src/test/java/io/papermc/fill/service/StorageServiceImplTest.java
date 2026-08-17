@@ -15,15 +15,15 @@
  */
 package io.papermc.fill.service;
 
-import io.papermc.fill.database.VersionEntity;
-import java.util.OptionalInt;
 import org.jspecify.annotations.NullMarked;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @NullMarked
-public interface PublishingService {
-  int getNextBuildNumber(
-    final VersionEntity version,
-    @Deprecated(forRemoval = true)
-    final OptionalInt requested
-  );
+public class StorageServiceImplTest {
+  @Test
+  public void testGenerateContentMd5() {
+    assertEquals("KndzvmIXlaWHkzx9lrRUSw==", StorageServiceImpl.generateContentMd5("2a7773be621795a587933c7d96b4544b"));
+  }
 }

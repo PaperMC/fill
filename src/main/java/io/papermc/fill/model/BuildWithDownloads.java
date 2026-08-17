@@ -15,6 +15,8 @@
  */
 package io.papermc.fill.model;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -35,5 +37,18 @@ public interface BuildWithDownloads<D extends AbstractDownload> extends Build {
       }
     }
     return null;
+  }
+
+  static <D extends AbstractDownload> boolean isSame(
+    final BuildWithDownloads<D> build,
+    final Instant createdAt,
+    final BuildChannel channel,
+    final List<Commit> commits,
+    final Map<String, D> downloads
+  ) {
+    return build.createdAt().equals(createdAt)
+      && build.channel() == channel
+      && build.commits().equals(commits)
+      && build.downloads().equals(downloads);
   }
 }

@@ -31,6 +31,8 @@ import io.papermc.fill.exception.ProjectNotFoundException;
 import io.papermc.fill.exception.PublishFailedException;
 import io.papermc.fill.exception.StorageWriteException;
 import io.papermc.fill.exception.VersionNotFoundException;
+import io.papermc.fill.model.BuildChannel;
+import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.Download;
 import io.papermc.fill.model.Support;
@@ -46,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,9 +63,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 @NullMarked
 @RestController
-public class Publishing3Controller {
+public class Api3PublishingController {
   private static final boolean CREATE_MISSING_VERSIONS = true;
-  private static final Logger LOGGER = LoggerFactory.getLogger(Publishing3Controller.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(Api3PublishingController.class);
 
   private final ProjectRepository projects;
   private final FamilyRepository families;
@@ -72,7 +75,7 @@ public class Publishing3Controller {
   private final AsyncEventPublisher events;
 
   @Autowired
-  public Publishing3Controller(
+  public Api3PublishingController(
     final ProjectRepository projects,
     final FamilyRepository families,
     final VersionRepository versions,
@@ -98,14 +101,14 @@ public class Publishing3Controller {
     @RequestBody
     final StageRequest request
   ) {
-    if (request.download().name().isBlank() || request.download().checksums().sha256().isBlank() || request.download().size() < 0 || request.contentType().isBlank() || request.contentMd5().isBlank()) {
+    if (isInvalidStageRequest(request)) {
       final String message = "Invalid upload metadata";
       throw createPublishFailedException(request, message, new IllegalArgumentException(message));
     }
     try {
       return Responses.ok(new StageResponse(
         true,
-        this.storage.createUploadUrl(request.id(), request.download(), request.contentMd5(), MediaType.parseMediaType(request.contentType()))
+        this.storage.createUploadUrl(request.id(), request.download())
       ));
     } catch (final StorageWriteException | IllegalArgumentException e) {
       throw createPublishFailedException(request, "Could not create upload URL", e);
@@ -145,14 +148,16 @@ public class Publishing3Controller {
       }
     }
 
+    final int number = request.build();
+    final BuildChannel channel = request.channel();
     final List<Commit> commits = request.commits().reversed();
     final Map<String, Download> downloads = request.downloads();
 
-    final BuildEntity existingBuild = this.builds.findByVersionAndNumber(version, request.build()).orElse(null);
+    final BuildEntity existingBuild = this.builds.findByVersionAndNumber(version, number).orElse(null);
     if (existingBuild != null) {
-      if (isSameBuild(existingBuild, request, commits, downloads)) {
+      if (BuildWithDownloads.isSame(existingBuild, createdAt, channel, commits, downloads)) {
         this.deleteStagedObjects(request, downloads);
-        return Responses.created(new PublishResponse(true));
+        return Responses.ok(new PublishResponse(true));
       }
       throw createPublishFailedException(request, "Build already exists", new DuplicateBuildException());
     }
@@ -162,8 +167,8 @@ public class Publishing3Controller {
       createdAt,
       project,
       version,
-      request.build(),
-      request.channel(),
+      number,
+      channel,
       commits,
       downloads
     );
@@ -197,16 +202,16 @@ public class Publishing3Controller {
     return new PublishFailedException("Publishing the build failed: " + message, throwable);
   }
 
-  private static boolean isSameBuild(
-    final BuildEntity build,
-    final PublishRequest request,
-    final List<Commit> commits,
-    final Map<String, Download> downloads
-  ) {
-    return build.createdAt().equals(request.time()) &&
-      build.channel() == request.channel() &&
-      build.commits().equals(commits) &&
-      build.downloads().equals(downloads);
+  private static boolean isInvalidStageRequest(final StageRequest request) {
+    return request.download().name().isBlank()
+      || isNullOrBlank(request.download().checksums().md5())
+      || isNullOrBlank(request.download().checksums().sha256())
+      || request.download().size() < 0
+      || isNullOrBlank(request.download().type());
+  }
+
+  private static boolean isNullOrBlank(final @Nullable String string) {
+    return string == null || string.isBlank();
   }
 
   private void deleteStagedObjects(final PublishRequest request, final Map<String, Download> downloads) {
