@@ -22,12 +22,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.filter.ShallowEtagHeaderFilter;
 import org.springframework.web.filter.UrlHandlerFilter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @NullMarked
 public class WebConfiguration implements WebMvcConfigurer {
+  @Override
+  public void addCorsMappings(final CorsRegistry registry) {
+    registry.addMapping("/openapi.yaml").allowedOrigins("*").allowedMethods("GET");
+  }
+
   @Bean
   public ShallowEtagHeaderFilter shallowEtagHeaderFilter() {
     return new ShallowEtagHeaderFilter();
