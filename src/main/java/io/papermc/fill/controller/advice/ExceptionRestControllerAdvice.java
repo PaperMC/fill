@@ -28,6 +28,7 @@ import io.papermc.fill.exception.DuplicateVersionException;
 import io.papermc.fill.exception.FamilyNotFoundException;
 import io.papermc.fill.exception.ProjectNotFoundException;
 import io.papermc.fill.exception.PublishFailedException;
+import io.papermc.fill.exception.SessionConflictException;
 import io.papermc.fill.exception.SunsetException;
 import io.papermc.fill.exception.VersionNotFoundException;
 import io.papermc.fill.model.response.ErrorResponse;
@@ -112,7 +113,8 @@ public class ExceptionRestControllerAdvice {
   @ExceptionHandler({
     DuplicateBuildException.class,
     DuplicateFamilyException.class,
-    DuplicateVersionException.class
+    DuplicateVersionException.class,
+    SessionConflictException.class
   })
   public ResponseEntity<?> on409Conflict(final Throwable throwable) {
     return Responses.conflict(new ErrorResponse(
@@ -120,6 +122,7 @@ public class ExceptionRestControllerAdvice {
         case final DuplicateBuildException _ -> "build_already_exists";
         case final DuplicateFamilyException _ -> "family_already_exists";
         case final DuplicateVersionException _ -> "version_already_exists";
+        case final SessionConflictException _ -> "session_conflict";
         default -> throw new IllegalStateException("Unexpected value: " + throwable);
       },
       throwable.getMessage()

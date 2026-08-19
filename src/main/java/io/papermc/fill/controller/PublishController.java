@@ -183,7 +183,7 @@ public class PublishController {
       }
     }
 
-    final int number = this.publishing.getNextBuildNumber(version, OptionalInt.of(request.build()));
+    final int number = this.publishing.allocateBuildNumber(request.id().toString(), version, OptionalInt.of(request.build()));
 
     if (this.builds.findByVersionAndNumber(version, number).isPresent()) {
       throw createPublishFailedException(request, "Build already exists", new DuplicateBuildException());
