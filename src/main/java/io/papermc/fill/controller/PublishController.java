@@ -186,7 +186,36 @@ public class PublishController {
 
     final List<Commit> commits = request.commits().reversed();
 
-    final Map<String, Download> downloads = request.downloads();
+    final Map<String, Download> declaredDownloads = request.downloads();
+    final Map<String, Download> effectiveDownloads = new HashMap<>();
+    final Map<String, VirtualFile> stagedFiles = new HashMap<>();
+
+    for (final Map.Entry<String, Download> entry : declaredDownloads.entrySet()) {
+      final Download declared = entry.getValue();
+      final VirtualFile file = instance.removeStagedFile(declared.name());
+      if (file == null) {
+        throw createPublishFailedException(request, String.format("Download %s has no associated file", declared.name()), new DownloadNotFoundException());
+      }
+      final Checksums expected = declared.checksums();
+      final Checksums actual = createChecksums(file.bytes());
+      final boolean sha256Match = expected.sha256().equals(actual.sha256());
+      final boolean md5Match = expected.md5() == null || expected.md5().equalsIgnoreCase(actual.md5());
+      if (!sha256Match || !md5Match) {
+        final String message = String.format(
+          "Checksum mismatch for download %s: expected %s but got %s",
+          declared.name(),
+          expected,
+          actual
+        );
+        throw createPublishFailedException(request, message, new ChecksumMismatchException(message));
+      }
+      // synthesize md5 for DB so new builds always have proper md5 even from old clients
+      final Download effective = expected.md5() == null || !expected.md5().equals(actual.md5())
+        ? new Download(declared.name(), declared.type(), actual, declared.size())
+        : declared;
+      effectiveDownloads.put(entry.getKey(), effective);
+      stagedFiles.put(entry.getKey(), file);
+    }
 
     final BuildEntity build = BuildEntity.create(
       new ObjectId(Date.from(createdAt)),
@@ -196,25 +225,12 @@ public class PublishController {
       number,
       request.channel(),
       commits,
-      downloads
+      effectiveDownloads
     );
 
-    for (final Map.Entry<String, Download> entry : downloads.entrySet()) {
+    for (final Map.Entry<String, Download> entry : effectiveDownloads.entrySet()) {
       final Download download = entry.getValue();
-      final VirtualFile file = instance.removeStagedFile(download.name());
-      if (file == null) {
-        throw createPublishFailedException(request, String.format("Download %s has no associated file", download.name()), new DownloadNotFoundException());
-      }
-      final Checksums checksums = createChecksums(file.bytes());
-      if (!download.checksums().equals(checksums)) {
-        final String message = String.format(
-          "Checksum mismatch for download %s: expected %s but got %s",
-          download.name(),
-          download.checksums(),
-          checksums
-        );
-        throw createPublishFailedException(request, message, new ChecksumMismatchException(message));
-      }
+      final VirtualFile file = stagedFiles.get(entry.getKey());
       try {
         this.storage.putObject(project, version, build, download, file.bytes(), file.type());
       } catch (final StorageWriteException e) {
@@ -222,7 +238,7 @@ public class PublishController {
       }
     }
 
-    if (!instance.hasAnyStagedFiles()) {
+    if (instance.hasAnyStagedFiles()) {
       throw createPublishFailedException(request, String.format("Additional files (%s) were provided that have no defined downloads", String.join(", ", instance.files.keySet())), new DownloadNotFoundException());
     }
 
@@ -261,7 +277,7 @@ public class PublishController {
     }
 
     public @Nullable VirtualFile removeStagedFile(final String name) {
-      return this.files.get(name);
+      return this.files.remove(name);
     }
 
     public void addStagedFile(final String name, final VirtualFile bytes) {
