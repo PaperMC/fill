@@ -106,7 +106,7 @@ dependencies {
 
   implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.19.0")
   implementation("com.bucket4j:bucket4j_jdk17-core:8.19.0")
-  implementation("com.discord4j:discord4j-core:3.3.2")
+  implementation("com.discord4j:discord4j-core:3.3.3")
   implementation("com.github.ben-manes.caffeine:caffeine:3.2.4")
   implementation("com.google.guava:guava:33.6.0-jre")
   implementation("com.graphql-java:graphql-java-extended-scalars:24.0")
