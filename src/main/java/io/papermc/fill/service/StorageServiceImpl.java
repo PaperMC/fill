@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -148,7 +149,7 @@ public class StorageServiceImpl implements StorageService {
 
   @VisibleForTesting
   static String generateContentMd5(final String string) {
-    return Base64.getEncoder().encodeToString(BaseEncoding.base16().lowerCase().decode(string));
+    return Base64.getEncoder().encodeToString(BaseEncoding.base16().decode(string.toUpperCase(Locale.ROOT)));
   }
 
   @Override
