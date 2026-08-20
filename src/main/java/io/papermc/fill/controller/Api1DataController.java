@@ -13,25 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.notification;
+package io.papermc.fill.controller;
 
-import java.nio.charset.StandardCharsets;
+import io.papermc.fill.exception.SunsetException;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.jspecify.annotations.NullMarked;
-import org.junit.jupiter.api.Test;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@Deprecated
+@Hidden
 @NullMarked
-class WebhookPublisherTest {
-  @Test
-  void signsWithDecodedStandardWebhookSecret() {
-    final String signature = WebhookPublisher.createSignature(
-      "whsec_AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
-      "fill_test",
-      "1700000000",
-      "{\"type\":\"build.published\"}".getBytes(StandardCharsets.UTF_8)
-    );
-
-    assertEquals("v1,gjBnzVZudyFih59/Knjh7oE1wC2z3CMPV2RkxEBJBQk=", signature);
+@RestController
+public class Api1DataController {
+  @GetMapping({
+    "/v1/{project:[a-z]+}/{version:[0-9pre.-]+}/{build:\\d+}/download",
+    "/v1/{project:[a-z]+}/{version:[0-9pre.-]+}/latest/download"
+  })
+  @SuppressWarnings("MVCPathVariableInspection")
+  public ResponseEntity<?> gone() {
+    throw new SunsetException();
   }
 }

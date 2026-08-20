@@ -82,7 +82,7 @@ import org.springframework.web.bind.annotation.RestController;
 @NullMarked
 @RestController
 @Tag(name = "Meta v3")
-public class Meta3Controller {
+public class Api3MetaController {
   private static final Duration CACHE_LENGTH_PROJECTS = Duration.ofHours(1);
   private static final Duration CACHE_LENGTH_PROJECT = Duration.ofMinutes(30);
   private static final Duration CACHE_LENGTH_VERSIONS = Duration.ofMinutes(5);
@@ -98,7 +98,7 @@ public class Meta3Controller {
   private final StorageService storage;
 
   @Autowired
-  public Meta3Controller(
+  public Api3MetaController(
     final ProjectRepository projects,
     final FamilyRepository families,
     final VersionRepository versions,

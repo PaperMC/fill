@@ -51,7 +51,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Deprecated
 @Hidden
 @NullMarked
-public class Data2Controller {
+public class Api2DataController {
   private static final Duration CACHE_LENGTH_DOWNLOAD = Duration.ofDays(7);
 
   private final Clock clock;
@@ -61,7 +61,7 @@ public class Data2Controller {
   private final StorageService storage;
 
   @Autowired
-  public Data2Controller(
+  public Api2DataController(
     final Clock clock,
     final ProjectRepository projects,
     final VersionRepository versions,

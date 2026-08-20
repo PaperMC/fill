@@ -86,9 +86,7 @@ public interface StorageService {
 
   URI createUploadUrl(
     final UUID id,
-    final Download download,
-    final String contentMd5,
-    final MimeType type
+    final Download download
   ) throws StorageWriteException;
 
   void verifyStagedObject(

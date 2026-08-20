@@ -44,7 +44,6 @@ import io.papermc.fill.model.request.UploadRequest;
 import io.papermc.fill.model.request.v3.PublishRequest;
 import io.papermc.fill.model.response.PublishResponse;
 import io.papermc.fill.model.response.UploadResponse;
-import io.papermc.fill.service.PublishingService;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.crypto.HashAlgorithm;
 import io.papermc.fill.util.http.MediaTypes;
@@ -57,7 +56,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalInt;
 import java.util.UUID;
 import org.bson.types.ObjectId;
 import org.jspecify.annotations.NullMarked;
@@ -90,7 +88,6 @@ public class PublishController {
   private final FamilyRepository families;
   private final VersionRepository versions;
   private final BuildRepository builds;
-  private final PublishingService publishing;
   private final StorageService storage;
   private final AsyncEventPublisher events;
   private final LoadingCache<UUID, StagingInstance> instances = Caffeine.newBuilder()
@@ -103,7 +100,6 @@ public class PublishController {
     final FamilyRepository families,
     final VersionRepository versions,
     final BuildRepository builds,
-    final PublishingService publishing,
     final StorageService storage,
     final AsyncEventPublisher events
   ) {
@@ -111,7 +107,6 @@ public class PublishController {
     this.families = families;
     this.versions = versions;
     this.builds = builds;
-    this.publishing = publishing;
     this.storage = storage;
     this.events = events;
   }
@@ -183,7 +178,7 @@ public class PublishController {
       }
     }
 
-    final int number = this.publishing.getNextBuildNumber(version, OptionalInt.of(request.build()));
+    final int number = request.build();
 
     if (this.builds.findByVersionAndNumber(version, number).isPresent()) {
       throw createPublishFailedException(request, "Build already exists", new DuplicateBuildException());
@@ -240,6 +235,7 @@ public class PublishController {
 
   private static Checksums createChecksums(final byte[] bytes) {
     return new Checksums(
+      HashAlgorithm.MD5.hash(bytes).toString(),
       HashAlgorithm.SHA256.hash(bytes).toString()
     );
   }

@@ -15,14 +15,18 @@
  */
 package io.papermc.fill.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Hidden;
 import java.net.URI;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @Hidden
 @NullMarked
 public record Download(
   String name,
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  @Nullable String type,
   Checksums checksums,
   int size
 ) implements AbstractDownload {

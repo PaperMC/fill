@@ -74,7 +74,7 @@ import org.springframework.web.bind.annotation.RestController;
 @NullMarked
 @RestController
 @Tag(name = "Meta v2")
-public class Meta2Controller {
+public class Api2MetaController {
   private static final Duration CACHE_LENGTH_PROJECTS = Duration.ofMinutes(5);
   private static final Duration CACHE_LENGTH_PROJECT = Duration.ofMinutes(30);
   private static final Duration CACHE_LENGTH_FAMILY = Duration.ofMinutes(5);
@@ -91,7 +91,7 @@ public class Meta2Controller {
   private final BuildRepository builds;
 
   @Autowired
-  public Meta2Controller(
+  public Api2MetaController(
     final Clock clock,
     final ApplicationApiProperties properties,
     final ProjectRepository projects,

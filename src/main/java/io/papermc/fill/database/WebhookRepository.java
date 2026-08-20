@@ -29,5 +29,5 @@ import org.springframework.stereotype.Repository;
 public interface WebhookRepository extends MongoRepository<WebhookEntity, ObjectId> {
   @Query("{ '_id': ?0 }")
   @Update("{ '$set': { 'lastDeliveryStatus': ?1, 'lastDeliveryAt': ?2 } }")
-  long updateDelivery(ObjectId id, DeliveryStatus status, Instant deliveredAt);
+  long updateDelivery(final ObjectId id, final DeliveryStatus status, final Instant deliveredAt);
 }

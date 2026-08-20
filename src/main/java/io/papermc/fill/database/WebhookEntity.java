@@ -34,7 +34,12 @@ public class WebhookEntity extends AbstractEntity {
   public WebhookEntity() {
   }
 
-  public static WebhookEntity create(final ObjectId _id, final Instant createdAt, final String url, final String secret) {
+  public static WebhookEntity create(
+    final ObjectId _id,
+    final Instant createdAt,
+    final String url,
+    final String secret
+  ) {
     final WebhookEntity entity = new WebhookEntity();
     entity._id = _id;
     entity.createdAt = createdAt;

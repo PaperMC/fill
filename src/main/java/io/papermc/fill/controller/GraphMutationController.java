@@ -218,14 +218,11 @@ public class GraphMutationController {
     final PromoteBuildInput input
   ) {
     final ProjectEntity project = this.projects.findByKey(input.project()).orElseThrow(ProjectNotFoundException::new);
-    VersionEntity version = this.versions.findByProjectAndKey(project, input.version()).orElseThrow(VersionNotFoundException::new);
+    final VersionEntity version = this.versions.findByProjectAndKey(project, input.version()).orElseThrow(VersionNotFoundException::new);
     BuildEntity build = this.builds.findByVersionAndNumber(version, input.number()).orElseThrow(BuildNotFoundException::new);
 
     build.setChannel(BuildChannel.RECOMMENDED);
     build = this.builds.save(build);
-
-    version.setMostRecentPromotedBuild(build);
-    version = this.versions.save(version);
 
     this.events.publish(new FillEvent.BuildPromoted(this.clock.instant(), project, version, build));
 
