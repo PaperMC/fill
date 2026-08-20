@@ -16,7 +16,6 @@
 package io.papermc.fill.service;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.io.BaseEncoding;
 import io.papermc.fill.configuration.properties.ApplicationApiProperties;
 import io.papermc.fill.exception.StorageReadException;
 import io.papermc.fill.exception.StorageWriteException;
@@ -31,7 +30,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Base64;
-import java.util.Locale;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -149,7 +148,7 @@ public class StorageServiceImpl implements StorageService {
 
   @VisibleForTesting
   static String generateContentMd5(final String string) {
-    return Base64.getEncoder().encodeToString(BaseEncoding.base16().decode(string.toUpperCase(Locale.ROOT)));
+    return Base64.getEncoder().encodeToString(HexFormat.of().parseHex(string));
   }
 
   @Override
