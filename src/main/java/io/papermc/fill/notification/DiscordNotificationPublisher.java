@@ -44,6 +44,7 @@ import io.papermc.fill.service.DiscordService;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.discord.Components;
 import io.papermc.fill.util.discord.DiscordNotificationChannel;
+import io.papermc.fill.util.discord.PrToMdHyperLinkUtil;
 import io.papermc.fill.util.git.GitRepository;
 import java.net.URI;
 import java.util.List;
@@ -152,7 +153,7 @@ public class DiscordNotificationPublisher {
               repository.name(),
               commit.sha()
             ),
-            commit.summary()
+            PrToMdHyperLinkUtil.hyperlinkTrailingPrMention(commit.summary(), repository.owner(), repository.name())
           )).collect(Collectors.joining("\n"))
       ));
     }, switch (build.channel()) {
