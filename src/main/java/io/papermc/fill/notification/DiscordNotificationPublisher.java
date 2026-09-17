@@ -146,11 +146,9 @@ public class DiscordNotificationPublisher {
             "- %s: %s",
             String.format(
               Locale.ROOT,
-              "[%s](https://diffs.dev/?github_url=https://github.com/%s/%s/commit/%s)",
+              "[%s](https://diffs.dev/?github_url=%s)",
               Commit.getShortSha(commit),
-              repository.owner(),
-              repository.name(),
-              commit.sha()
+              repository.commitUrl(commit.sha())
             ),
             commit.summary()
           )).collect(Collectors.joining("\n"))
@@ -180,13 +178,10 @@ public class DiscordNotificationPublisher {
     if (buildBefore != null && !buildBefore.commits().isEmpty() && !build.commits().isEmpty()) {
       final String url = String.format(
         Locale.ROOT,
-        "https://diffs.dev/?github_url=https://github.com/%s/%s/compare/%s..%s",
-        repository.owner(),
-        repository.name(),
-        buildBefore.commits().getFirst().sha(),
-        build.commits().getFirst().sha()
+        "https://diffs.dev/?github_url=%s",
+        repository.compareUrl(buildBefore.commits().getFirst().sha(), build.commits().getFirst().sha())
       );
-      return Button.link(url, createEmoji(this.properties.emojis().gitCompare()), "GitHub Diff");
+      return Button.link(url, createEmoji(this.properties.emojis().gitCompare()), "Diff");
     }
     return null;
   }

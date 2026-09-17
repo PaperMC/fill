@@ -70,6 +70,8 @@ type Project implements Node {
 
   name: String!
 
+  gitRepository: GitRepository
+
   families: [Family]
 
   family(
@@ -135,6 +137,8 @@ type Version implements Node {
   support: Support!
 
   java: Java
+
+  gitRepository: GitRepository
 
   builds(
     orderBy: BuildOrder
@@ -259,6 +263,39 @@ type Download {
   size: Int!
 
   url: String!
+}
+
+type GitRepository {
+  forge: GitForge!
+
+  host: String!
+
+  owner: String!
+
+  name: String!
+
+  url: String!
+
+  commitUrlTemplate: String!
+
+  commitUrl(
+    sha: String!
+  ): String!
+
+  compareUrlTemplate: String!
+
+  compareUrl(
+    base: String!
+    head: String!
+  ): String!
+}
+
+enum GitForge {
+  GITHUB
+
+  GITLAB
+
+  GITEA
 }
 
 type Java {

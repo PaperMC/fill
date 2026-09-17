@@ -49,6 +49,7 @@ import io.papermc.fill.model.Timestamped;
 import io.papermc.fill.model.Version;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.service.WebhookService;
+import io.papermc.fill.util.git.GitRepository;
 import io.papermc.fill.util.graphql.CursorCodec;
 import io.papermc.fill.util.graphql.CursorPaginator;
 import java.net.URI;
@@ -140,6 +141,11 @@ public class GraphQueryController {
   @SchemaMapping(typeName = "Project", field = "name")
   public String mapProjectName(final ProjectEntity project) {
     return project.name();
+  }
+
+  @SchemaMapping(typeName = "Project", field = "gitRepository")
+  public @Nullable GitRepository mapProjectGitRepository(final ProjectEntity project) {
+    return project.gitRepository();
   }
 
   @SchemaMapping(typeName = "Project", field = "families")
@@ -247,6 +253,17 @@ public class GraphQueryController {
   @SchemaMapping(typeName = "Version", field = "java")
   public @Nullable Java mapVersionJava(final VersionEntity version) {
     return version.java();
+  }
+
+  @SchemaMapping(typeName = "Version", field = "gitRepository")
+  public @Nullable GitRepository mapVersionGitRepository(final VersionEntity version) {
+    final GitRepository repository = version.gitRepository();
+    if (repository != null) {
+      return repository;
+    }
+    return this.projects.findById(version.project())
+      .map(ProjectEntity::gitRepository)
+      .orElse(null);
   }
 
   @SchemaMapping(typeName = "Version", field = "builds")
@@ -368,6 +385,23 @@ public class GraphQueryController {
       return null;
     }
     return lastDeliveryAt.atZone(ZoneOffset.UTC);
+  }
+
+  @SchemaMapping(typeName = "GitRepository", field = "commitUrl")
+  public String mapGitRepositoryCommitUrl(
+    final GitRepository repository,
+    @Argument final String sha
+  ) {
+    return repository.commitUrl(sha);
+  }
+
+  @SchemaMapping(typeName = "GitRepository", field = "compareUrl")
+  public String mapGitRepositoryCompareUrl(
+    final GitRepository repository,
+    @Argument final String base,
+    @Argument final String head
+  ) {
+    return repository.compareUrl(base, head);
   }
 
   private Function<BuildEntity, BuildWithDownloads<DownloadWithUrl>> mapBuild(final Project project, final Version version) {
