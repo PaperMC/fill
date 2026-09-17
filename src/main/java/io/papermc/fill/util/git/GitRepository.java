@@ -41,8 +41,6 @@ public record GitRepository(
     }
     return switch (this.forge()) {
       case GITHUB -> "github.com";
-      case GITLAB -> "gitlab.com";
-      case GITEA -> "gitea.com";
     };
   }
 
@@ -52,8 +50,7 @@ public record GitRepository(
 
   public String commitUrlTemplate() {
     return switch (this.forge()) {
-      case GITHUB, GITEA -> this.url() + "/commit/{sha}";
-      case GITLAB -> this.url() + "/-/commit/{sha}";
+      case GITHUB -> this.url() + "/commit/{sha}";
     };
   }
 
@@ -63,8 +60,7 @@ public record GitRepository(
 
   public String compareUrlTemplate() {
     return switch (this.forge()) {
-      case GITHUB, GITEA -> this.url() + "/compare/{base}...{head}";
-      case GITLAB -> this.url() + "/-/compare/{base}...{head}";
+      case GITHUB -> this.url() + "/compare/{base}...{head}";
     };
   }
 

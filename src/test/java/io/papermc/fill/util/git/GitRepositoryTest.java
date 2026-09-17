@@ -35,22 +35,12 @@ public class GitRepositoryTest {
   }
 
   @Test
-  public void testGitLab() {
-    final GitRepository repository = new GitRepository(GitForge.GITLAB, null, "mygroup", "myrepo");
-    assertEquals(GitForge.GITLAB, repository.forge());
-    assertEquals("gitlab.com", repository.host());
-    assertEquals("https://gitlab.com/mygroup/myrepo", repository.url());
-    assertEquals("https://gitlab.com/mygroup/myrepo/-/commit/abc1234", repository.commitUrl("abc1234"));
-    assertEquals("https://gitlab.com/mygroup/myrepo/-/compare/abc1234...def5678", repository.compareUrl("abc1234", "def5678"));
-  }
-
-  @Test
-  public void testGiteaWithCustomHost() {
-    final GitRepository repository = new GitRepository(GitForge.GITEA, "git.papermc.io", "PaperMC", "Paper");
-    assertEquals(GitForge.GITEA, repository.forge());
-    assertEquals("git.papermc.io", repository.host());
-    assertEquals("https://git.papermc.io/PaperMC/Paper", repository.url());
-    assertEquals("https://git.papermc.io/PaperMC/Paper/commit/abc1234", repository.commitUrl("abc1234"));
-    assertEquals("https://git.papermc.io/PaperMC/Paper/compare/abc1234...def5678", repository.compareUrl("abc1234", "def5678"));
+  public void testCustomHost() {
+    final GitRepository repository = new GitRepository(GitForge.GITHUB, "github.papermc.io", "PaperMC", "Paper");
+    assertEquals(GitForge.GITHUB, repository.forge());
+    assertEquals("github.papermc.io", repository.host());
+    assertEquals("https://github.papermc.io/PaperMC/Paper", repository.url());
+    assertEquals("https://github.papermc.io/PaperMC/Paper/commit/abc1234", repository.commitUrl("abc1234"));
+    assertEquals("https://github.papermc.io/PaperMC/Paper/compare/abc1234...def5678", repository.compareUrl("abc1234", "def5678"));
   }
 }

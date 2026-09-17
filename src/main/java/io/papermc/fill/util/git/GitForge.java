@@ -19,7 +19,5 @@ import org.jspecify.annotations.NullMarked;
 
 @NullMarked
 public enum GitForge {
-  GITHUB,
-  GITLAB,
-  GITEA
+  GITHUB
 }

@@ -292,10 +292,6 @@ type GitRepository {
 
 enum GitForge {
   GITHUB
-
-  GITLAB
-
-  GITEA
 }
 
 type Java {
