@@ -6,11 +6,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: namespace-profile-linux-default
     timeout-minutes: 30
     steps:
       - name: "git / checkout"
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: namespacelabs/nscloud-checkout-action@66f2dc6f6c42a8ac6c4e53473c4840006822831e # v9.0.1
 
       - name: "docker / login"
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
@@ -25,9 +25,19 @@ jobs:
           check-latest: true
           distribution: zulu
           java-version: 25
+          cache: "" # namespace handles this
+
+      - name: "gradle / cache"
+        uses: namespacelabs/nscloud-cache-action@1124a6f3ce44e5cf84cc22111530961f4d2a15f9 # v1.7.0
+        with:
+          cache: gradle
+
+      - name: "gradle / build cache"
+        run: |
+          nsc cache gradle setup --init-gradle /tmp/init.gradle
 
       - name: "gradle / setup"
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
 
       - name: "gradle / build"
-        run: ./gradlew jib -Djib.console=plain --stacktrace
+        run: ./gradlew --init-script=/tmp/init.gradle jib -Djib.console=plain --stacktrace
