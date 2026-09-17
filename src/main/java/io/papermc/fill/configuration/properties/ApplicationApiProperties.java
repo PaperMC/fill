@@ -26,6 +26,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties("app.api")
 @NullMarked
 public record ApplicationApiProperties(
+  String apiDocsUrl,
   @Deprecated(forRemoval = true)
   Map<String, List<LegacyDownloadKeyMapping>> legacyDownloadKeyMappings,
   Metadata metadata,

@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.util.http;
 
+import java.net.URI;
 import java.util.function.Consumer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -43,6 +44,10 @@ public final class Responses {
 
   public static <R> ResponseEntity<R> created(final R body) {
     return create(HttpStatus.CREATED, body);
+  }
+
+  public static <R> ResponseEntity<R> found(final URI uri) {
+    return create(HttpStatus.FOUND, null, headers -> headers.setLocation(uri));
   }
 
   public static <R> ResponseEntity<R> badRequest(final R body) {
