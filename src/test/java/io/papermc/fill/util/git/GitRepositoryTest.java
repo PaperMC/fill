@@ -24,24 +24,36 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class GitRepositoryTest {
   @Test
   public void testDefaultGitHub() {
-    final GitRepository repository = new GitRepository("PaperMC", "Paper");
+    final GitRepository repository = new GitRepository("PaperMC/Paper");
     assertEquals(GitForge.GITHUB, repository.forge());
-    assertEquals("github.com", repository.host());
-    assertEquals("PaperMC/Paper", repository.fullName());
+    assertEquals("PaperMC/Paper", repository.name());
     assertEquals("https://github.com/PaperMC/Paper", repository.url());
-    assertEquals("https://github.com/PaperMC/Paper/commit/{sha}", repository.commitUrlTemplate());
     assertEquals("https://github.com/PaperMC/Paper/commit/abc1234", repository.commitUrl("abc1234"));
-    assertEquals("https://github.com/PaperMC/Paper/compare/{base}...{head}", repository.compareUrlTemplate());
     assertEquals("https://github.com/PaperMC/Paper/compare/abc1234...def5678", repository.compareUrl("abc1234", "def5678"));
   }
 
   @Test
-  public void testCustomHost() {
-    final GitRepository repository = new GitRepository(GitForge.GITHUB, "github.papermc.io", "PaperMC", "Paper");
+  public void testExplicitForge() {
+    final GitRepository repository = new GitRepository(GitForge.GITHUB, "PaperMC/Paper");
     assertEquals(GitForge.GITHUB, repository.forge());
-    assertEquals("github.papermc.io", repository.host());
-    assertEquals("https://github.papermc.io/PaperMC/Paper", repository.url());
-    assertEquals("https://github.papermc.io/PaperMC/Paper/commit/abc1234", repository.commitUrl("abc1234"));
-    assertEquals("https://github.papermc.io/PaperMC/Paper/compare/abc1234...def5678", repository.compareUrl("abc1234", "def5678"));
+    assertEquals("PaperMC/Paper", repository.name());
+    assertEquals("https://github.com/PaperMC/Paper", repository.url());
+  }
+
+  @Test
+  public void testLegacyOwnerNameConstructor() {
+    final GitRepository repository = new GitRepository("PaperMC", "Paper");
+    assertEquals(GitForge.GITHUB, repository.forge());
+    assertEquals("PaperMC/Paper", repository.name());
+    assertEquals("https://github.com/PaperMC/Paper", repository.url());
+  }
+
+  @Test
+  public void testPersistenceCreator() {
+    final GitRepository fromSplit = new GitRepository(GitForge.GITHUB, "PaperMC", "Paper");
+    assertEquals("PaperMC/Paper", fromSplit.name());
+
+    final GitRepository fromCombined = new GitRepository(GitForge.GITHUB, null, "PaperMC/Paper");
+    assertEquals("PaperMC/Paper", fromCombined.name());
   }
 }

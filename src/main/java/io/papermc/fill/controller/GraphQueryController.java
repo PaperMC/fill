@@ -388,11 +388,6 @@ public class GraphQueryController {
     return lastDeliveryAt.atZone(ZoneOffset.UTC);
   }
 
-  @SchemaMapping(typeName = "GitRepository", field = "name")
-  public String mapGitRepositoryName(final GitRepository repository) {
-    return repository.fullName();
-  }
-
   private Function<BuildEntity, BuildWithDownloadsImpl<DownloadWithUrl>> mapBuild(final ProjectEntity project, final VersionEntity version) {
     final GitRepository repository = Objects.requireNonNullElse(version.gitRepository(), project.gitRepository());
     return build -> {

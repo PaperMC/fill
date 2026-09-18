@@ -17,16 +17,24 @@ package io.papermc.fill.util.git;
 
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.annotation.PersistenceCreator;
 
 @NullMarked
 public record GitRepository(
   @Nullable GitForge forge,
-  @Nullable String host,
-  String owner,
   String name
 ) {
+  public GitRepository(final String name) {
+    this((GitForge) null, name);
+  }
+
+  @PersistenceCreator
+  public GitRepository(final @Nullable GitForge forge, final @Nullable String owner, final String name) {
+    this(forge, owner != null ? owner + "/" + name : name);
+  }
+
   public GitRepository(final String owner, final String name) {
-    this(null, null, owner, name);
+    this(null, owner, name);
   }
 
   @Override
@@ -34,41 +42,21 @@ public record GitRepository(
     return this.forge != null ? this.forge : GitForge.GITHUB;
   }
 
-  @Override
-  public String host() {
-    if (this.host != null) {
-      return this.host;
-    }
-    return switch (this.forge()) {
-      case GITHUB -> "github.com";
-    };
-  }
-
-  public String fullName() {
-    return this.owner + "/" + this.name;
-  }
-
   public String url() {
-    return "https://" + this.host() + "/" + this.owner + "/" + this.name;
-  }
-
-  public String commitUrlTemplate() {
     return switch (this.forge()) {
-      case GITHUB -> this.url() + "/commit/{sha}";
+      case GITHUB -> "https://github.com/" + this.name;
     };
   }
 
   public String commitUrl(final String sha) {
-    return this.commitUrlTemplate().replace("{sha}", sha);
-  }
-
-  public String compareUrlTemplate() {
     return switch (this.forge()) {
-      case GITHUB -> this.url() + "/compare/{base}...{head}";
+      case GITHUB -> this.url() + "/commit/" + sha;
     };
   }
 
   public String compareUrl(final String base, final String head) {
-    return this.compareUrlTemplate().replace("{base}", base).replace("{head}", head);
+    return switch (this.forge()) {
+      case GITHUB -> this.url() + "/compare/" + base + "..." + head;
+    };
   }
 }
