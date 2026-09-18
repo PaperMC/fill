@@ -181,7 +181,7 @@ public class DiscordNotificationPublisher {
         "https://diffs.dev/?github_url=%s",
         repository.compareUrl(buildBefore.commits().getFirst().sha(), build.commits().getFirst().sha())
       );
-      return Button.link(url, createEmoji(this.properties.emojis().gitCompare()), "Diff");
+      return Button.link(url, createEmoji(this.properties.emojis().gitCompare()), "GitHub Diff");
     }
     return null;
   }
