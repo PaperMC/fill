@@ -270,8 +270,6 @@ type Download {
 type GitRepository {
   forge: GitForge!
 
-  host: String!
-
   owner: String!
 
   name: String!
@@ -279,19 +277,6 @@ type GitRepository {
   fullName: String!
 
   url: String!
-
-  commitUrlTemplate: String!
-
-  commitUrl(
-    sha: String!
-  ): String!
-
-  compareUrlTemplate: String!
-
-  compareUrl(
-    base: String!
-    head: String!
-  ): String!
 }
 
 enum GitForge {

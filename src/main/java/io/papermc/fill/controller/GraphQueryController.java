@@ -37,7 +37,7 @@ import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.BuildWithDownloadsImpl;
-import io.papermc.fill.model.CommitWithUrl;
+import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.DeliveryStatus;
 import io.papermc.fill.model.DownloadWithUrl;
 import io.papermc.fill.model.Java;
@@ -82,7 +82,7 @@ public class GraphQueryController {
     CursorCodec.INSTANT,
     Comparator.naturalOrder()
   );
-  private static final CursorPaginator<Integer, BuildWithDownloadsImpl<DownloadWithUrl>> BUILD_PAGINATOR = new CursorPaginator<>(
+  private static final CursorPaginator<Integer, BuildWithDownloads<DownloadWithUrl>> BUILD_PAGINATOR = new CursorPaginator<>(
     "builds",
     Build::number,
     CursorCodec.INT,
@@ -268,7 +268,7 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Version", field = "builds")
-  public Connection<BuildWithDownloadsImpl<DownloadWithUrl>> mapVersionBuilds(
+  public Connection<BuildWithDownloads<DownloadWithUrl>> mapVersionBuilds(
     final VersionEntity version,
     @Argument
     final @Nullable BuildOrder orderBy,
@@ -303,7 +303,7 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Version", field = "build")
-  public @Nullable BuildWithDownloadsImpl<DownloadWithUrl> mapProjectVersion(
+  public @Nullable BuildWithDownloads<DownloadWithUrl> mapProjectVersion(
     final VersionEntity version,
     @Argument
     final int number
@@ -335,8 +335,8 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Build", field = "commits")
-  public List<CommitWithUrl> mapBuildCommits(final BuildWithDownloadsImpl<DownloadWithUrl> build) {
-    return build.commitsWithUrls();
+  public List<Commit> mapBuildCommits(final BuildWithDownloads<DownloadWithUrl> build) {
+    return build.commits();
   }
 
   @SchemaMapping(typeName = "Build", field = "downloads")
@@ -388,29 +388,12 @@ public class GraphQueryController {
     return lastDeliveryAt.atZone(ZoneOffset.UTC);
   }
 
-  @SchemaMapping(typeName = "GitRepository", field = "commitUrl")
-  public String mapGitRepositoryCommitUrl(
-    final GitRepository repository,
-    @Argument final String sha
-  ) {
-    return repository.commitUrl(sha);
-  }
-
-  @SchemaMapping(typeName = "GitRepository", field = "compareUrl")
-  public String mapGitRepositoryCompareUrl(
-    final GitRepository repository,
-    @Argument final String base,
-    @Argument final String head
-  ) {
-    return repository.compareUrl(base, head);
-  }
-
   private Function<BuildEntity, BuildWithDownloadsImpl<DownloadWithUrl>> mapBuild(final ProjectEntity project, final VersionEntity version) {
     final GitRepository repository = Objects.requireNonNullElse(version.gitRepository(), project.gitRepository());
     return build -> {
-      final List<CommitWithUrl> commits = build.commits().stream()
-        .map(commit -> CommitWithUrl.of(commit, repository != null ? repository.commitUrl(commit.sha()) : null))
-        .toList();
+      final List<Commit> commits = repository == null
+        ? build.commits()
+        : build.commits().stream().map(c -> c.withUrl(repository.commitUrl(c.sha()))).toList();
       final Map<String, DownloadWithUrl> downloads = Maps.transformValues(build.downloads(), download -> {
         final URI url = this.storage.getDownloadUrl(project, version, build, download);
         return download.withUrl(url);

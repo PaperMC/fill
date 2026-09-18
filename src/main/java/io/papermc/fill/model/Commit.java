@@ -18,14 +18,24 @@ package io.papermc.fill.model;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public record Commit(
   @Schema(pattern = "\\b[0-9a-f]{40}\\b")
   String sha,
   Instant time,
-  String message
+  String message,
+  @Nullable String url
 ) {
+  public Commit(final String sha, final Instant time, final String message) {
+    this(sha, time, message, null);
+  }
+
+  public Commit withUrl(final @Nullable String url) {
+    return new Commit(this.sha, this.time, this.message, url);
+  }
+
   public static String getShortSha(final Commit commit) {
     return commit.sha().substring(0, 7);
   }
