@@ -270,11 +270,7 @@ type Download {
 type GitRepository {
   forge: GitForge!
 
-  owner: String!
-
   name: String!
-
-  fullName: String!
 
   url: String!
 }
