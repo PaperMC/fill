@@ -27,6 +27,7 @@ public class GitRepositoryTest {
     final GitRepository repository = new GitRepository("PaperMC", "Paper");
     assertEquals(GitForge.GITHUB, repository.forge());
     assertEquals("github.com", repository.host());
+    assertEquals("PaperMC/Paper", repository.fullName());
     assertEquals("https://github.com/PaperMC/Paper", repository.url());
     assertEquals("https://github.com/PaperMC/Paper/commit/{sha}", repository.commitUrlTemplate());
     assertEquals("https://github.com/PaperMC/Paper/commit/abc1234", repository.commitUrl("abc1234"));

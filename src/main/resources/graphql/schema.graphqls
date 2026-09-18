@@ -253,6 +253,8 @@ type Commit {
   sha: String!
 
   message: String!
+
+  url: String
 }
 
 type Download {
@@ -273,6 +275,8 @@ type GitRepository {
   owner: String!
 
   name: String!
+
+  fullName: String!
 
   url: String!
 

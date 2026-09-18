@@ -44,6 +44,10 @@ public record GitRepository(
     };
   }
 
+  public String fullName() {
+    return this.owner + "/" + this.name;
+  }
+
   public String url() {
     return "https://" + this.host() + "/" + this.owner + "/" + this.name;
   }

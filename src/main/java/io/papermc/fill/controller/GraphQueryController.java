@@ -37,12 +37,11 @@ import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
 import io.papermc.fill.model.BuildWithDownloads;
 import io.papermc.fill.model.BuildWithDownloadsImpl;
-import io.papermc.fill.model.Commit;
+import io.papermc.fill.model.CommitWithUrl;
 import io.papermc.fill.model.DeliveryStatus;
 import io.papermc.fill.model.DownloadWithUrl;
 import io.papermc.fill.model.Java;
 import io.papermc.fill.model.Keyed;
-import io.papermc.fill.model.Project;
 import io.papermc.fill.model.Support;
 import io.papermc.fill.model.SupportStatus;
 import io.papermc.fill.model.Timestamped;
@@ -59,6 +58,8 @@ import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -81,7 +82,7 @@ public class GraphQueryController {
     CursorCodec.INSTANT,
     Comparator.naturalOrder()
   );
-  private static final CursorPaginator<Integer, BuildWithDownloads<DownloadWithUrl>> BUILD_PAGINATOR = new CursorPaginator<>(
+  private static final CursorPaginator<Integer, BuildWithDownloadsImpl<DownloadWithUrl>> BUILD_PAGINATOR = new CursorPaginator<>(
     "builds",
     Build::number,
     CursorCodec.INT,
@@ -267,7 +268,7 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Version", field = "builds")
-  public Connection<BuildWithDownloads<DownloadWithUrl>> mapVersionBuilds(
+  public Connection<BuildWithDownloadsImpl<DownloadWithUrl>> mapVersionBuilds(
     final VersionEntity version,
     @Argument
     final @Nullable BuildOrder orderBy,
@@ -302,7 +303,7 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Version", field = "build")
-  public @Nullable BuildWithDownloads<DownloadWithUrl> mapProjectVersion(
+  public @Nullable BuildWithDownloadsImpl<DownloadWithUrl> mapProjectVersion(
     final VersionEntity version,
     @Argument
     final int number
@@ -334,8 +335,8 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Build", field = "commits")
-  public List<Commit> mapBuildCommits(final BuildWithDownloads<DownloadWithUrl> build) {
-    return build.commits();
+  public List<CommitWithUrl> mapBuildCommits(final BuildWithDownloadsImpl<DownloadWithUrl> build) {
+    return build.commitsWithUrls();
   }
 
   @SchemaMapping(typeName = "Build", field = "downloads")
@@ -404,10 +405,17 @@ public class GraphQueryController {
     return repository.compareUrl(base, head);
   }
 
-  private Function<BuildEntity, BuildWithDownloads<DownloadWithUrl>> mapBuild(final Project project, final Version version) {
-    return build -> new BuildWithDownloadsImpl<>(build, Maps.transformValues(build.downloads(), download -> {
-      final URI url = this.storage.getDownloadUrl(project, version, build, download);
-      return download.withUrl(url);
-    }));
+  private Function<BuildEntity, BuildWithDownloadsImpl<DownloadWithUrl>> mapBuild(final ProjectEntity project, final VersionEntity version) {
+    final GitRepository repository = Objects.requireNonNullElse(version.gitRepository(), project.gitRepository());
+    return build -> {
+      final List<CommitWithUrl> commits = build.commits().stream()
+        .map(commit -> CommitWithUrl.of(commit, repository != null ? repository.commitUrl(commit.sha()) : null))
+        .toList();
+      final Map<String, DownloadWithUrl> downloads = Maps.transformValues(build.downloads(), download -> {
+        final URI url = this.storage.getDownloadUrl(project, version, build, download);
+        return download.withUrl(url);
+      });
+      return new BuildWithDownloadsImpl<>(build, commits, downloads);
+    };
   }
 }

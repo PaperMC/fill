@@ -28,9 +28,36 @@ public record BuildWithDownloadsImpl<D extends AbstractDownload>(
   Instant updatedAt,
   BuildChannel channel,
   List<Commit> commits,
+  List<CommitWithUrl> commitsWithUrls,
   Map<String, D> downloads
 ) implements BuildWithDownloads<D> {
   public BuildWithDownloadsImpl(final BuildWithDownloads<? extends AbstractDownload> that, final Map<String, D> downloads) {
-    this(that.id(), that.number(), that.createdAt(), that.updatedAt(), that.channel(), that.commits(), downloads);
+    this(
+      that.id(),
+      that.number(),
+      that.createdAt(),
+      that.updatedAt(),
+      that.channel(),
+      that.commits(),
+      that.commits().stream().map(c -> CommitWithUrl.of(c, null)).toList(),
+      downloads
+    );
+  }
+
+  public BuildWithDownloadsImpl(
+    final BuildWithDownloads<? extends AbstractDownload> that,
+    final List<CommitWithUrl> commitsWithUrls,
+    final Map<String, D> downloads
+  ) {
+    this(
+      that.id(),
+      that.number(),
+      that.createdAt(),
+      that.updatedAt(),
+      that.channel(),
+      that.commits(),
+      commitsWithUrls,
+      downloads
+    );
   }
 }
