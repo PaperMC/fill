@@ -59,7 +59,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -389,7 +388,7 @@ public class GraphQueryController {
   }
 
   private Function<BuildEntity, BuildWithDownloadsImpl<DownloadWithUrl>> mapBuild(final ProjectEntity project, final VersionEntity version) {
-    final GitRepository repository = Objects.requireNonNullElse(version.gitRepository(), project.gitRepository());
+    final GitRepository repository = version.gitRepository() != null ? version.gitRepository() : project.gitRepository();
     return build -> {
       final List<Commit> commits = repository == null
         ? build.commits()
