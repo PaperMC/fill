@@ -16,10 +16,47 @@
 package io.papermc.fill.util.git;
 
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.annotation.PersistenceCreator;
 
 @NullMarked
 public record GitRepository(
-  String owner,
+  @Nullable GitForge forge,
   String name
 ) {
+  public GitRepository(final String name) {
+    this((GitForge) null, name);
+  }
+
+  @PersistenceCreator
+  public GitRepository(final @Nullable GitForge forge, final @Nullable String owner, final String name) {
+    this(forge, owner != null ? owner + "/" + name : name);
+  }
+
+  public GitRepository(final String owner, final String name) {
+    this(null, owner, name);
+  }
+
+  @Override
+  public GitForge forge() {
+    return this.forge != null ? this.forge : GitForge.GITHUB;
+  }
+
+  public String url() {
+    return switch (this.forge()) {
+      case GITHUB -> "https://github.com/" + this.name;
+    };
+  }
+
+  public String commitUrl(final String sha) {
+    return switch (this.forge()) {
+      case GITHUB -> this.url() + "/commit/" + sha;
+    };
+  }
+
+  public String compareUrl(final String base, final String head) {
+    return switch (this.forge()) {
+      case GITHUB -> this.url() + "/compare/" + base + "..." + head;
+    };
+  }
 }

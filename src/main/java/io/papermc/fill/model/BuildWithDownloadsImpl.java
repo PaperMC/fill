@@ -33,4 +33,12 @@ public record BuildWithDownloadsImpl<D extends AbstractDownload>(
   public BuildWithDownloadsImpl(final BuildWithDownloads<? extends AbstractDownload> that, final Map<String, D> downloads) {
     this(that.id(), that.number(), that.createdAt(), that.updatedAt(), that.channel(), that.commits(), downloads);
   }
+
+  public BuildWithDownloadsImpl(
+    final BuildWithDownloads<? extends AbstractDownload> that,
+    final List<Commit> commits,
+    final Map<String, D> downloads
+  ) {
+    this(that.id(), that.number(), that.createdAt(), that.updatedAt(), that.channel(), commits, downloads);
+  }
 }
