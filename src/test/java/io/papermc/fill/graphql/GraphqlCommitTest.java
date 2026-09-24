@@ -34,7 +34,6 @@ public class GraphqlCommitTest {
     final GraphqlCommit graphqlCommit = GraphqlCommit.from(commit, new GitRepository("PaperMC/Paper"));
 
     assertEquals(commit.sha(), graphqlCommit.sha());
-    assertEquals(commit.time(), graphqlCommit.time());
     assertEquals(commit.message(), graphqlCommit.message());
     assertEquals("https://github.com/PaperMC/Paper/commit/" + SHA, graphqlCommit.url());
   }

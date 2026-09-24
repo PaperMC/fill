@@ -17,19 +17,17 @@ package io.papermc.fill.graphql;
 
 import io.papermc.fill.model.Commit;
 import io.papermc.fill.util.git.GitRepository;
-import java.time.Instant;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public record GraphqlCommit(
   String sha,
-  Instant time,
   String message,
   @Nullable String url
 ) {
   public static GraphqlCommit from(final Commit commit, final @Nullable GitRepository repository) {
     final String url = repository == null ? null : repository.commitUrl(commit.sha());
-    return new GraphqlCommit(commit.sha(), commit.time(), commit.message(), url);
+    return new GraphqlCommit(commit.sha(), commit.message(), url);
   }
 }
