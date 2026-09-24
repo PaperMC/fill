@@ -15,8 +15,13 @@
  */
 package io.papermc.fill.util.git;
 
+import org.bson.Document;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
+import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
+import org.springframework.data.mongodb.core.convert.NoOpDbRefResolver;
+import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -55,5 +60,39 @@ public class GitRepositoryTest {
 
     final GitRepository fromCombined = new GitRepository(GitForge.GITHUB, null, "PaperMC/Paper");
     assertEquals("PaperMC/Paper", fromCombined.name());
+  }
+
+  @Test
+  public void testReadLegacyDocument() throws Exception {
+    final GitRepository repository = converter().read(
+      GitRepository.class,
+      Document.parse("{\"owner\":\"PaperMC\",\"name\":\"Paper\"}")
+    );
+
+    assertEquals(GitForge.GITHUB, repository.forge());
+    assertEquals("PaperMC/Paper", repository.name());
+  }
+
+  @Test
+  public void testReadCurrentDocument() throws Exception {
+    final GitRepository repository = converter().read(
+      GitRepository.class,
+      Document.parse("{\"forge\":\"GITHUB\",\"name\":\"PaperMC/Paper\"}")
+    );
+
+    assertEquals(GitForge.GITHUB, repository.forge());
+    assertEquals("PaperMC/Paper", repository.name());
+  }
+
+  private static MappingMongoConverter converter() throws Exception {
+    final MongoCustomConversions conversions = MongoCustomConversions.create(adapter -> {});
+    final MongoMappingContext mappingContext = new MongoMappingContext();
+    mappingContext.setSimpleTypeHolder(conversions.getSimpleTypeHolder());
+    mappingContext.afterPropertiesSet();
+
+    final MappingMongoConverter converter = new MappingMongoConverter(NoOpDbRefResolver.INSTANCE, mappingContext);
+    converter.setCustomConversions(conversions);
+    converter.afterPropertiesSet();
+    return converter;
   }
 }

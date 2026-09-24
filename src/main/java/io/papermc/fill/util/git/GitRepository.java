@@ -17,6 +17,7 @@ package io.papermc.fill.util.git;
 
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.annotation.PersistenceCreator;
 
 @NullMarked
@@ -29,7 +30,7 @@ public record GitRepository(
   }
 
   @PersistenceCreator
-  public GitRepository(final @Nullable GitForge forge, final @Nullable String owner, final String name) {
+  public GitRepository(final @Nullable GitForge forge, final @Value("#root.owner") @Nullable String owner, final String name) {
     this(forge, owner != null ? owner + "/" + name : name);
   }
 
