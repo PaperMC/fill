@@ -46,25 +46,4 @@ public class BuildWithDownloadsImplTest {
     assertEquals(base.commits(), updated.commits());
     assertEquals(Map.of("paper", download), updated.downloads());
   }
-
-  @Test
-  public void testConstructorWithCustomCommitsAndDownloads() {
-    final Instant now = Instant.now();
-    final Commit commit = new Commit("afa6c8b3a2fae95785dc7d9685a57835d703ac88", now, "Test");
-    final Commit commitWithUrl = commit.withUrl("https://github.com/PaperMC/Paper/commit/afa6c8b3a2fae95785dc7d9685a57835d703ac88");
-    final Download download = new Download("paper.jar", "application/java-archive", new Checksums("sha256", "md5"), 1234);
-    final BuildWithDownloadsImpl<Download> base = new BuildWithDownloadsImpl<>(
-      "id",
-      1,
-      now,
-      now,
-      BuildChannel.STABLE,
-      List.of(commit),
-      Map.of("paper", download)
-    );
-
-    final BuildWithDownloadsImpl<Download> updated = new BuildWithDownloadsImpl<>(base, List.of(commitWithUrl), Map.of("paper", download));
-    assertEquals(List.of(commitWithUrl), updated.commits());
-    assertEquals("https://github.com/PaperMC/Paper/commit/afa6c8b3a2fae95785dc7d9685a57835d703ac88", updated.commits().getFirst().url());
-  }
 }

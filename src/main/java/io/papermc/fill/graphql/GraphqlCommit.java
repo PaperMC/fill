@@ -13,24 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.model;
+package io.papermc.fill.graphql;
 
+import io.papermc.fill.model.Commit;
+import io.papermc.fill.util.git.GitRepository;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @NullMarked
-public record BuildWithDownloadsImpl<D extends AbstractDownload>(
-  String id,
-  int number,
-  Instant createdAt,
-  Instant updatedAt,
-  BuildChannel channel,
-  List<Commit> commits,
-  Map<String, D> downloads
-) implements BuildWithDownloads<D> {
-  public BuildWithDownloadsImpl(final BuildWithDownloads<? extends AbstractDownload> that, final Map<String, D> downloads) {
-    this(that.id(), that.number(), that.createdAt(), that.updatedAt(), that.channel(), that.commits(), downloads);
+public record GraphqlCommit(
+  String sha,
+  Instant time,
+  String message,
+  @Nullable String url
+) {
+  public static GraphqlCommit from(final Commit commit, final @Nullable GitRepository repository) {
+    final String url = repository == null ? null : repository.commitUrl(commit.sha());
+    return new GraphqlCommit(commit.sha(), commit.time(), commit.message(), url);
   }
 }

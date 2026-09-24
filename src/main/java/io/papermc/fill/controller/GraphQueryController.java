@@ -31,13 +31,11 @@ import io.papermc.fill.exception.ProjectNotFoundException;
 import io.papermc.fill.graphql.BuildFilters;
 import io.papermc.fill.graphql.BuildOrder;
 import io.papermc.fill.graphql.Connection;
+import io.papermc.fill.graphql.GraphqlBuild;
+import io.papermc.fill.graphql.GraphqlCommit;
 import io.papermc.fill.graphql.VersionFilters;
 import io.papermc.fill.graphql.VersionOrder;
-import io.papermc.fill.model.Build;
 import io.papermc.fill.model.BuildChannel;
-import io.papermc.fill.model.BuildWithDownloads;
-import io.papermc.fill.model.BuildWithDownloadsImpl;
-import io.papermc.fill.model.Commit;
 import io.papermc.fill.model.DeliveryStatus;
 import io.papermc.fill.model.DownloadWithUrl;
 import io.papermc.fill.model.Java;
@@ -81,9 +79,9 @@ public class GraphQueryController {
     CursorCodec.INSTANT,
     Comparator.naturalOrder()
   );
-  private static final CursorPaginator<Integer, BuildWithDownloads<DownloadWithUrl>> BUILD_PAGINATOR = new CursorPaginator<>(
+  private static final CursorPaginator<Integer, GraphqlBuild> BUILD_PAGINATOR = new CursorPaginator<>(
     "builds",
-    Build::number,
+    GraphqlBuild::number,
     CursorCodec.INT,
     Comparator.naturalOrder()
   );
@@ -267,7 +265,7 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Version", field = "builds")
-  public Connection<BuildWithDownloads<DownloadWithUrl>> mapVersionBuilds(
+  public Connection<GraphqlBuild> mapVersionBuilds(
     final VersionEntity version,
     @Argument
     final @Nullable BuildOrder orderBy,
@@ -302,7 +300,7 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Version", field = "build")
-  public @Nullable BuildWithDownloads<DownloadWithUrl> mapProjectVersion(
+  public @Nullable GraphqlBuild mapProjectVersion(
     final VersionEntity version,
     @Argument
     final int number
@@ -314,42 +312,42 @@ public class GraphQueryController {
   }
 
   @SchemaMapping(typeName = "Build", field = "id")
-  public String mapBuildId(final BuildWithDownloads<DownloadWithUrl> build) {
+  public String mapBuildId(final GraphqlBuild build) {
     return build.id();
   }
 
   @SchemaMapping(typeName = "Build", field = "number")
-  public int mapBuildNumber(final BuildWithDownloads<DownloadWithUrl> build) {
+  public int mapBuildNumber(final GraphqlBuild build) {
     return build.number();
   }
 
   @SchemaMapping(typeName = "Build", field = "createdAt")
-  public ZonedDateTime mapBuildCreatedAt(final BuildWithDownloads<DownloadWithUrl> build) {
+  public ZonedDateTime mapBuildCreatedAt(final GraphqlBuild build) {
     return build.createdAt().atZone(ZoneOffset.UTC);
   }
 
   @SchemaMapping(typeName = "Build", field = "channel")
-  public BuildChannel mapBuildChannel(final BuildWithDownloads<DownloadWithUrl> build) {
+  public BuildChannel mapBuildChannel(final GraphqlBuild build) {
     return build.channel();
   }
 
   @SchemaMapping(typeName = "Build", field = "commits")
-  public List<Commit> mapBuildCommits(final BuildWithDownloads<DownloadWithUrl> build) {
+  public List<GraphqlCommit> mapBuildCommits(final GraphqlBuild build) {
     return build.commits();
   }
 
   @SchemaMapping(typeName = "Build", field = "downloads")
-  public Collection<DownloadWithUrl> mapBuildDownloads(final BuildWithDownloads<DownloadWithUrl> build) {
+  public Collection<DownloadWithUrl> mapBuildDownloads(final GraphqlBuild build) {
     return build.downloads().values();
   }
 
   @SchemaMapping(typeName = "Build", field = "download")
   public @Nullable DownloadWithUrl mapBuildDownload(
-    final BuildWithDownloads<DownloadWithUrl> build,
+    final GraphqlBuild build,
     @Argument
     final String key
   ) {
-    return build.getDownloadByKey(key);
+    return build.downloads().get(key);
   }
 
   @QueryMapping("webhooks")
@@ -387,17 +385,17 @@ public class GraphQueryController {
     return lastDeliveryAt.atZone(ZoneOffset.UTC);
   }
 
-  private Function<BuildEntity, BuildWithDownloadsImpl<DownloadWithUrl>> mapBuild(final ProjectEntity project, final VersionEntity version) {
+  private Function<BuildEntity, GraphqlBuild> mapBuild(final ProjectEntity project, final VersionEntity version) {
     final GitRepository repository = version.gitRepository() != null ? version.gitRepository() : project.gitRepository();
     return build -> {
-      final List<Commit> commits = repository == null
-        ? build.commits()
-        : build.commits().stream().map(c -> c.withUrl(repository.commitUrl(c.sha()))).toList();
+      final List<GraphqlCommit> commits = build.commits().stream()
+        .map(commit -> GraphqlCommit.from(commit, repository))
+        .toList();
       final Map<String, DownloadWithUrl> downloads = Maps.transformValues(build.downloads(), download -> {
         final URI url = this.storage.getDownloadUrl(project, version, build, download);
         return download.withUrl(url);
       });
-      return new BuildWithDownloadsImpl<>(build, commits, downloads);
+      return new GraphqlBuild(build.id(), build.number(), build.createdAt(), build.channel(), commits, downloads);
     };
   }
 }

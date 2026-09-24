@@ -13,24 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.model;
+package io.papermc.fill.graphql;
 
+import io.papermc.fill.model.BuildChannel;
+import io.papermc.fill.model.DownloadWithUrl;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public record BuildWithDownloadsImpl<D extends AbstractDownload>(
+public record GraphqlBuild(
   String id,
   int number,
   Instant createdAt,
-  Instant updatedAt,
   BuildChannel channel,
-  List<Commit> commits,
-  Map<String, D> downloads
-) implements BuildWithDownloads<D> {
-  public BuildWithDownloadsImpl(final BuildWithDownloads<? extends AbstractDownload> that, final Map<String, D> downloads) {
-    this(that.id(), that.number(), that.createdAt(), that.updatedAt(), that.channel(), that.commits(), downloads);
-  }
+  List<GraphqlCommit> commits,
+  Map<String, DownloadWithUrl> downloads
+) {
 }

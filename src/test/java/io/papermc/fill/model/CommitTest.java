@@ -22,7 +22,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 @NullMarked
 public class CommitTest {
@@ -30,22 +29,6 @@ public class CommitTest {
   public void testGetShortSha() {
     final Commit commit = new Commit("afa6c8b3a2fae95785dc7d9685a57835d703ac88", Instant.now(), "This is a test.");
     assertEquals("afa6c8b", Commit.getShortSha(commit));
-  }
-
-  @Test
-  public void testUrl() {
-    final Instant now = Instant.now();
-    final Commit commit = new Commit("afa6c8b3a2fae95785dc7d9685a57835d703ac88", now, "This is a test.");
-    assertNull(commit.url());
-
-    final Commit withUrl = commit.withUrl("https://github.com/PaperMC/Paper/commit/afa6c8b3a2fae95785dc7d9685a57835d703ac88");
-    assertEquals("https://github.com/PaperMC/Paper/commit/afa6c8b3a2fae95785dc7d9685a57835d703ac88", withUrl.url());
-    assertEquals(commit.sha(), withUrl.sha());
-    assertEquals(commit.time(), withUrl.time());
-    assertEquals(commit.message(), withUrl.message());
-
-    final Commit clearedUrl = withUrl.withUrl(null);
-    assertNull(clearedUrl.url());
   }
 
   @ParameterizedTest
