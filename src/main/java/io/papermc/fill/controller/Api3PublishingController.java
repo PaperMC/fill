@@ -42,6 +42,7 @@ import io.papermc.fill.model.response.v3.PublishResponse;
 import io.papermc.fill.model.response.v3.StageResponse;
 import io.papermc.fill.service.StorageService;
 import io.papermc.fill.util.http.Responses;
+import io.swagger.v3.oas.annotations.Hidden;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -61,6 +62,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+@Hidden
 @NullMarked
 @RestController
 public class Api3PublishingController {

@@ -31,6 +31,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfiguration implements WebMvcConfigurer {
   @Override
   public void addCorsMappings(final CorsRegistry registry) {
+    registry.addMapping("/openapi").allowedOrigins("*").allowedMethods("GET");
     registry.addMapping("/openapi.yaml").allowedOrigins("*").allowedMethods("GET");
   }
 

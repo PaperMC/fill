@@ -33,7 +33,5 @@ spring:
 
 springdoc:
   api-docs:
-    path: /openapi.yaml
-  swagger-ui:
-    path: /
+    path: /openapi
   writer-with-order-by-keys: true
