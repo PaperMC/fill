@@ -15,6 +15,7 @@
  */
 package io.papermc.fill.util.graphql;
 
+import io.papermc.fill.exception.InvalidCursorArgumentsException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
@@ -41,7 +42,7 @@ public record CursorCodec<T>(
     try {
       return this.decoder.apply(fromBase64(value));
     } catch (final RuntimeException e) {
-      throw new IllegalArgumentException("Invalid cursor", e);
+      throw new InvalidCursorArgumentsException(String.format("`%s` does not appear to be a valid cursor.", value));
     }
   }
 

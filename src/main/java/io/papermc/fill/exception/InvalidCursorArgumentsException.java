@@ -13,16 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.papermc.fill.graphql;
+package io.papermc.fill.exception;
 
 import graphql.ErrorClassification;
+import io.papermc.fill.graphql.GraphError;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
-public enum GraphError implements ErrorClassification {
-  AMBIGUOUS_PAGINATION,
-  EXCESSIVE_PAGINATION,
-  INVALID_CURSOR_ARGUMENTS,
-  INVALID_PAGINATION,
-  MISSING_PAGINATION_BOUNDARIES,
+public class InvalidCursorArgumentsException extends AppException {
+  public InvalidCursorArgumentsException(final String message) {
+    super(message);
+  }
+
+  @Override
+  public ErrorClassification getGraphErrorClassification() {
+    return GraphError.INVALID_CURSOR_ARGUMENTS;
+  }
 }
